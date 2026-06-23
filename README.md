@@ -41,4 +41,24 @@ Proyek ini fokus pada kecepatan eksekusi, penggunaan memori yang minimal, serta 
 
 1. Clone repositori ini:
    ```bash
-   git clone [https://github.com/username](https://github.com/username) Anda/nama-repo.git
+   git clone [[https://github.com/username](https://github.com/username](https://github.com/mailhasan/Rest-Api-SimrsERM)) Anda/nama-repo.git
+
+📝 Dokumentasi API (OpenAPI Specification)
+
+Dokumentasi API proyek ini ditulis menggunakan standar OpenAPI 3.0 (Swagger/YAML). Anda dapat mengimpor file dokumentasi yang tersedia di folder docs/ ke dalam Postman atau Swagger Editor untuk melihat daftar endpoint, parameter, dan contoh respon JSON secara interaktif.
+🤝 Kontribusi & Rekomendasi
+
+Proyek ini terbuka untuk seluruh komunitas pengembang SIMRS Khanza. Jika Anda menemukan bug, memiliki ide optimasi query, atau ingin menambahkan endpoint baru sesuai modul Khanza lainnya, silakan kirimkan Pull Request atau buka Issue.
+
+Besar harapan kami proyek ini dapat menjadi salah satu rekomendasi solusi bagi YASKI dan rekan-rekan sejawat dalam mempercepat migrasi atau interkoneksi SIMRS Khanza ke platform modern.
+
+## 👨‍💻 Pengembang & Kontak
+
+Proyek ini diinisiasi dan dikembangkan secara aktif oleh:
+
+* **Nama:** Ismail Hasan
+* **Email:** [mail.hasan06@gmail.com](mailto:mail.hasan06@gmail.com)
+* **Telegram:** [@Mailhasan1](https://t.me/Mailhasan1)
+
+Jika Anda memiliki pertanyaan seputar integrasi, kebutuhan bridging kustom untuk SIMRS Khanza, atau ingin berdiskusi mengenai arsitektur sistem ini, silakan hubungi melalui jalur komunikasi di atas.
+
