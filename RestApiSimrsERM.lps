@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="12"/>
+    <BuildModes Active="Default"/>
+    <Units>
+      <Unit>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <CursorPos X="85" Y="10"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uhandlerapi.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="21"/>
+        <CursorPos X="5" Y="44"/>
+        <UsageCount Value="20"/>
+        <Loaded Value="True"/>
+      </Unit>
+    </Units>
+    <JumpHistory HistoryIndex="5">
+      <Position>
+        <Filename Value="uhandlerapi.pas"/>
+        <Caret Line="145" Column="5"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="11" Column="14"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="10" Column="85"/>
+      </Position>
+      <Position>
+        <Filename Value="uhandlerapi.pas"/>
+        <Caret Line="15" Column="5"/>
+      </Position>
+      <Position>
+        <Filename Value="uhandlerapi.pas"/>
+        <Caret Line="9" Column="62"/>
+      </Position>
+      <Position>
+        <Filename Value="uhandlerapi.pas"/>
+        <Caret Line="50" Column="3" TopLine="21"/>
+      </Position>
+    </JumpHistory>
+    <RunParams>
+      <FormatVersion Value="2"/>
+      <Modes ActiveMode=""/>
+    </RunParams>
+  </ProjectSession>
+</CONFIG>
