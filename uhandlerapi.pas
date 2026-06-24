@@ -6,13 +6,14 @@ interface
 
 uses
   SysUtils, Classes, ZDataset, ZConnection, BrookURLRouter,
-  BrookHTTPRequest, BrookHTTPResponse, BrookUtility, zstream;
+  BrookHTTPRequest, BrookHTTPResponse, BrookUtility, zstream,
 
   // =================================================================
   // [DAFTAR MODUL]: TAMBAHKAN UNIT MODUL BARU ANDA DI BAWAH INI
   // =================================================================
-  //umod_auth,
+  umod_auth,
   //umod_pasien; // <-- Jika membuat umod_dokter, umod_ranap, dst, tambahkan di sini separated by comma
+  umod_getObatTanpaAuth;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
 
@@ -38,7 +39,8 @@ begin
   // =================================================================
 
   // 1. Modul Autentikasi / Login
-  //TRouteGetToken.Create(ARoutesCollection);
+  TRouteGetToken.Create(ARoutesCollection);
+
 
   // 2. Modul Pasien (CRUD, Pencarian)
   //TRoutePasien.Create(ARoutesCollection);
@@ -49,12 +51,15 @@ begin
   // 4. Modul Registrasi & Booking (Contoh masa depan)
   // TRouteRegistrasi.Create(ARoutesCollection);
 
+  // Registrasi endpoint obat tanpa auth
+   // <-- Tambahkan di sini
+  TRouteObatTanpaAuth.Create(ARoutesCollection);
+
 end;
 
 // =================================================================
 // CORE MIDDLEWARES (Sistem Keamanan & Utility Global)
 // =================================================================
-
 function IsAuthenticatedtoken(ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse): Boolean;
 var
   vToken: string;
@@ -69,15 +74,15 @@ begin
     Exit;
   end;
 
+  // Mengatasi prefix "Bearer " jika klien mengirimkan dengan format "Bearer <token>"
+  if Pos('Bearer ', vToken) = 1 then
+    vToken := Copy(vToken, 7, Length(vToken));
+
   vQueryUser := TZQuery.Create(nil);
   try
     vQueryUser.Connection := gZConn;
-    {
-      TIPS KHANZA: Anda bisa mengarahkan ini ke tabel `user` bawaan Khanza
-      dengan menambahkan field `token` baru di tabel tersebut, atau membuat
-      tabel custom `nfi_api_token` agar tidak merusak struktur asli Khanza.
-    }
-    vQueryUser.SQL.Text := 'SELECT id_user FROM user WHERE token = :token LIMIT 1';
+    // Membaca dari tabel custom pendamping
+    vQueryUser.SQL.Text := 'SELECT id_user FROM user_api_token WHERE token = :token LIMIT 1';
     vQueryUser.ParamByName('token').AsString := vToken;
     vQueryUser.Open;
 

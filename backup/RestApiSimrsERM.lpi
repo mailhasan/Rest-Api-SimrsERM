@@ -40,6 +40,15 @@
         <Filename Value="uhandlerapi.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="umod_getobattanpaauth.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="umod_getObatTanpaAuth"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_auth.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

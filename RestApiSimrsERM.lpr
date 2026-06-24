@@ -8,7 +8,7 @@ uses
   {$ENDIF}
   SysUtils, Classes, CustApp,IniFiles,
   ZConnection, BrookHTTPServer, BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse,
-  uhandlerapi;
+  uhandlerapi, umod_getObatTanpaAuth, umod_auth;
 
 type
   { TConsoleRouter }
@@ -55,7 +55,7 @@ begin
   FRouter := TConsoleRouter.Create(Self);
 
   // REGISTRASI OTOT: Panggil shared brain kita ke koleksi FRouter.Routes
-  //RegistrasiSemuaRute(FRouter.Routes, gZConnectiondb, gIPTracker);
+  RegistrasiSemuaRute(FRouter.Routes, gZConnectiondb, gIPTracker);
 
   FRouter.Active := True;
 end;
