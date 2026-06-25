@@ -13,7 +13,8 @@ uses
   // =================================================================
   umod_auth,
   //umod_pasien; // <-- Jika membuat umod_dokter, umod_ranap, dst, tambahkan di sini separated by comma
-  umod_getObatTanpaAuth;
+  umod_getObatTanpaAuth,
+  umod_inacbg;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
 
@@ -54,7 +55,9 @@ begin
   // Registrasi endpoint obat tanpa auth
    // <-- Tambahkan di sini
   TRouteObatTanpaAuth.Create(ARoutesCollection);
-
+  // Registrasi kelas modul INACBG
+  TRouteInacbgPasien.Create(ARoutesCollection);
+  TRouteInacbgDetailPasien.Create(ARoutesCollection);
 end;
 
 // =================================================================
