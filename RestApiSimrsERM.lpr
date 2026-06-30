@@ -8,7 +8,7 @@ uses
   {$ENDIF}
   SysUtils, Classes, CustApp,IniFiles,
   ZConnection, BrookHTTPServer, BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse,
-  uhandlerapi, umod_getObatTanpaAuth, umod_auth;
+  uhandlerapi, umod_getObatTanpaAuth, umod_auth, umod_riwayat;
 
 type
   { TConsoleRouter }
@@ -129,6 +129,11 @@ begin
     gZConnectiondb.Properties.Values['pooled'] := 'true';
     gZConnectiondb.Properties.Values['maxconnections'] := vIni.ReadString('Database', 'MaxConnections', '50');
     gZConnectiondb.Properties.Values['idle_timeout'] := vIni.ReadString('Database', 'IdleTimeout', '60');
+    // Tambahkan 3 baris sakti ini untuk mendeteksi dan menyambung ulang otomatis:
+    gZConnectiondb.Properties.Values['reconnect'] := 'true';     // Aktifkan auto-reconnect bawaan driver
+    gZConnectiondb.Properties.Values['ping_timeout'] := '5';     // Deteksi ping putus dalam 5 detik
+    gZConnectiondb.Properties.Values['keepalive'] := '30';       // Kirim sinyal ping internal tiap 30 detik
+
   finally
     vIni.Free;
   end;

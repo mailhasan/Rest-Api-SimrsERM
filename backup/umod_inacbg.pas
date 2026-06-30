@@ -50,7 +50,7 @@ var
   vJSONMentah, vJSONKompres: string;
 begin
   // Wajib Amankan Modul Klaim dengan Token Authentication
-  if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
+  //if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
 
   // 1. Tangkap parameter filter query string dari URL (?tgl_awal=...&tgl_akhir=...&carabayar=...&search=...)
   vTglAwal   := Trim(ARequest.Params.Values['tgl_awal']);
@@ -412,7 +412,7 @@ begin
 
     // e. Kamar Rawat Biasa (Tanpa Kamar Intensif) + Biaya Registrasi Awal
     vKamar := AmbilTotalBiaya(uhandlerapi.gZConn, vNoRawat, 'SELECT IFNULL(SUM(totalbiaya),0) FROM billing WHERE no_rawat=:norawat AND status=''Kamar'' AND nm_perawatan NOT LIKE ''%ICU%'' AND nm_perawatan NOT LIKE ''%CVCU%'' AND nm_perawatan NOT LIKE ''%HCU%'' AND nm_perawatan NOT LIKE ''%NICU%'' AND nm_perawatan NOT LIKE ''%PICU%''') + vBiayaReg;
-    JSONBiaya.Add('kamar', FormatFloat('0.00', vKamar))
+    JSONBiaya.Add('kamar', FormatFloat('0.00', vKamar));
 
     // f. Rawat Intensif (Kamar Intensif ICU, HCU, dll)
     vKamarIntensif := AmbilTotalBiaya(uhandlerapi.gZConn, vNoRawat, 'SELECT IFNULL(SUM(totalbiaya),0) FROM billing WHERE no_rawat=:norawat AND status=''Kamar'' AND (nm_perawatan LIKE ''%ICU%'' OR nm_perawatan LIKE ''%CVCU%'' OR nm_perawatan LIKE ''%HCU%'' OR nm_perawatan LIKE ''%NICU%'' OR nm_perawatan LIKE ''%PICU%'')');

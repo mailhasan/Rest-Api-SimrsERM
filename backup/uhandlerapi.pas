@@ -14,6 +14,7 @@ uses
   umod_auth,
   //umod_pasien; // <-- Jika membuat umod_dokter, umod_ranap, dst, tambahkan di sini separated by comma
   umod_getObatTanpaAuth,
+  umod_inacbg,
   umod_inacbg;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
@@ -57,6 +58,10 @@ begin
   TRouteObatTanpaAuth.Create(ARoutesCollection);
   // Registrasi kelas modul INACBG
   TRouteInacbgPasien.Create(ARoutesCollection);
+  TRouteInacbgDetailPasien.Create(ARoutesCollection);
+
+  ///riwayat
+  TRouteRiwayatPasien.Create(ARoutesCollection)
 end;
 
 // =================================================================
@@ -104,6 +109,10 @@ var
   vDataStr, vHitStr, vTimeStr: string;
   vPosPemisah: Integer;
 begin
+  // PENGAMAN RAM: Jika daftar tracker IP sudah terlalu banyak, reset demi mengosongkan RAM
+  if gIPTracker.Count > 2000 then
+    gIPTracker.Clear;
+
   Result := True;
   vCurrentTime := Now;
   vIndex := gIPTracker.IndexOfName(AIP);

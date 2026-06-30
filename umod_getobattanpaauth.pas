@@ -69,7 +69,7 @@ begin
       vQuery.ParamByName('nama').AsString := '%' + vNamaCari + '%';
     end;
 
-    vQuery.SQL.Add('LIMIT 100'); // Batasi 100 data demi menjaga performa server & memori
+    vQuery.SQL.Add('LIMIT 1000'); // Batasi 100 data demi menjaga performa server & memori
     vQuery.Open;
 
     // Loop data dari database Khanza ke format JSON Array

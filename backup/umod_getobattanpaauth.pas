@@ -91,7 +91,7 @@ begin
       HargaDasarStr := StringReplace(FormatFloat('0.00', HargaDasar), ',', '.', [rfReplaceAll]);
 
       // Tambahkan sebagai STRING ke JSON
-      JSONObject.Add('harga_dasar', HargaDasarStr)
+      JSONObject.Add('harga_dasar', HargaDasarStr);
       JSONObject.Add('expired_date', vQuery.FieldByName('expire').AsString); // Format default MySQL: YYYY-MM-DD
       JSONObject.Add('status', vQuery.FieldByName('status').AsString);
 
