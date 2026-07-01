@@ -20,7 +20,10 @@ type
     function AmbilDataTriaseIGD(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
     function AmbilAsesmenKeperawatanIGD(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
     function AmbilPenilaianMedisIGD(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
-
+    function AmbilTindakanRawatJalan(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+    function AmbilTindakanRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+    function AmbilSOAPRawatJalan(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+    function AmbilSOAPRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
   protected
     procedure DoRequest(ASender: TObject; ARoute: TBrookURLRoute; ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse) override;
   public
@@ -469,6 +472,259 @@ begin
   end;
 end;
 
+// =================================================================
+// HELPER DATA TINDAKAN RAJAL (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilTindakanRawatJalan(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+var
+  vQ: TZQuery;
+  vArrDetail: TJSONArray;
+  vObjDetail: TJSONObject;
+  vGrandTotal: Double;
+  vTotalItem: Integer;
+begin
+  Result := TJSONObject.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  vGrandTotal := 0;
+  vTotalItem := 0;
+  vArrDetail := TJSONArray.Create;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT r.tgl_perawatan, ');
+    vQ.SQL.Add('       DATE_FORMAT(r.tgl_perawatan, "%Y-%m-%d") AS tgl_format, ');
+    vQ.SQL.Add('       COALESCE(jp.nm_perawatan, "Tindakan") AS nm_perawatan, ');
+    vQ.SQL.Add('       r.biaya_rawat, ');
+    vQ.SQL.Add('       COALESCE(r.stts_bayar, "Belum") AS stts_bayar ');
+    vQ.SQL.Add('FROM ( ');
+    vQ.SQL.Add('    SELECT tgl_perawatan, kd_jenis_prw, biaya_rawat, stts_bayar FROM rawat_jl_dr WHERE TRIM(no_rawat) = :no_rawat ');
+    vQ.SQL.Add('    UNION ALL ');
+    vQ.SQL.Add('    SELECT tgl_perawatan, kd_jenis_prw, biaya_rawat, stts_bayar FROM rawat_jl_pr WHERE TRIM(no_rawat) = :no_rawat ');
+    vQ.SQL.Add('    UNION ALL ');
+    vQ.SQL.Add('    SELECT tgl_perawatan, kd_jenis_prw, biaya_rawat, stts_bayar FROM rawat_jl_drpr WHERE TRIM(no_rawat) = :no_rawat ');
+    vQ.SQL.Add(') r ');
+    vQ.SQL.Add('LEFT JOIN jns_perawatan jp ON r.kd_jenis_prw = jp.kd_jenis_prw ');
+    vQ.SQL.Add('ORDER BY r.tgl_perawatan DESC');
+
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      Inc(vTotalItem);
+      vGrandTotal := vGrandTotal + vQ.FieldByName('biaya_rawat').AsFloat;
+
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('tanggal', vQ.FieldByName('tgl_format').AsString);
+      vObjDetail.Add('nama_tindakan', Trim(vQ.FieldByName('nm_perawatan').AsString));
+      vObjDetail.Add('biaya', FormatFloat('0.00', vQ.FieldByName('biaya_rawat').AsFloat));
+      vObjDetail.Add('status_bayar', Trim(vQ.FieldByName('stts_bayar').AsString));
+
+      vArrDetail.Add(vObjDetail);
+      vQ.Next;
+    end;
+
+    // Masukkan data rangkuman & list detail ke object return utama
+    Result.Add('has_data', vTotalItem > 0);
+    Result.Add('jumlah_tindakan', vTotalItem);
+    Result.Add('grand_total_biaya', FormatFloat('0.00', vGrandTotal));
+    Result.Add('detail_tindakan', vArrDetail);
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
+// PERBAIKAN: HELPER DATA TINDAKAN RANAP (NAMA TINDAKAN SESUAI)
+// =================================================================
+function TRouteRiwayatPasien.AmbilTindakanRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+var
+  vQ: TZQuery;
+  vArrDetail: TJSONArray;
+  vObjDetail: TJSONObject;
+  vGrandTotal: Double;
+  vTotalItem: Integer;
+begin
+  Result := TJSONObject.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  vGrandTotal := 0;
+  vTotalItem := 0;
+  vArrDetail := TJSONArray.Create;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT r.tgl_perawatan, ');
+    vQ.SQL.Add('       DATE_FORMAT(r.tgl_perawatan, "%Y-%m-%d") AS tgl_format, ');
+    // Jika nm_perawatan kosong, gunakan fallback kategori teks agar tidak null
+    vQ.SQL.Add('       COALESCE(jp.nm_perawatan, r.kategori_tindakan) AS nm_perawatan, ');
+    vQ.SQL.Add('       r.biaya_rawat, ');
+    vQ.SQL.Add('       r.kategori_tindakan ');
+    vQ.SQL.Add('FROM ( ');
+    // PASTIKAN kd_jenis_prw IKUT DIAMBIL PADA MASING-MASING SELEKSI UNTUK RELASI JOIN
+    vQ.SQL.Add('    SELECT tgl_perawatan, kd_jenis_prw, biaya_rawat, "Tindakan Dokter" AS kategori_tindakan FROM rawat_inap_dr WHERE TRIM(no_rawat) = :no_rawat ');
+    vQ.SQL.Add('    UNION ALL ');
+    vQ.SQL.Add('    SELECT tgl_perawatan, kd_jenis_prw, biaya_rawat, "Tindakan Perawat" AS kategori_tindakan FROM rawat_inap_pr WHERE TRIM(no_rawat) = :no_rawat ');
+    vQ.SQL.Add('    UNION ALL ');
+    vQ.SQL.Add('    SELECT tgl_perawatan, kd_jenis_prw, biaya_rawat, "Tindakan Dokter & Perawat" AS kategori_tindakan FROM rawat_inap_drpr WHERE TRIM(no_rawat) = :no_rawat ');
+    vQ.SQL.Add(') r '); // Catatan: pastikan saat copy ke IDE, karakter '重' ini dibersihkan menjadi ') r '
+    vQ.SQL.Add('LEFT JOIN jns_perawatan jp ON r.kd_jenis_prw = jp.kd_jenis_prw ');
+    vQ.SQL.Add('ORDER BY r.tgl_perawatan DESC');
+
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      Inc(vTotalItem);
+      vGrandTotal := vGrandTotal + vQ.FieldByName('biaya_rawat').AsFloat;
+
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('tanggal', vQ.FieldByName('tgl_format').AsString);
+      vObjDetail.Add('nama_tindakan', Trim(vQ.FieldByName('nm_perawatan').AsString));
+      vObjDetail.Add('kategori', vQ.FieldByName('kategori_tindakan').AsString);
+      vObjDetail.Add('biaya', FormatFloat('0.00', vQ.FieldByName('biaya_rawat').AsFloat));
+
+      vArrDetail.Add(vObjDetail);
+      vQ.Next;
+    end;
+
+    Result.Add('has_data', vTotalItem > 0);
+    Result.Add('jumlah_tindakan', vTotalItem);
+    Result.Add('grand_total_biaya', FormatFloat('0.00', vGrandTotal));
+    Result.Add('detail_tindakan', vArrDetail);
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
+// HELPER DATA SOAP RAWAT JALAN (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilSOAPRawatJalan(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQ: TZQuery;
+  vObjSOAP, vObjTTV: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT pr.tgl_perawatan, pr.jam_rawat, ');
+    vQ.SQL.Add('       pr.keluhan, pr.pemeriksaan, pr.penilaian, pr.rtl, ');
+    vQ.SQL.Add('       pr.instruksi, pr.evaluasi, ');
+    vQ.SQL.Add('       pr.tensi, pr.nadi, pr.respirasi, pr.suhu_tubuh, pr.spo2, ');
+    vQ.SQL.Add('       pr.kesadaran, pg.nama ');
+    vQ.SQL.Add('FROM pemeriksaan_ralan pr ');
+    vQ.SQL.Add('LEFT JOIN pegawai pg ON pr.nip = pg.nik ');
+    vQ.SQL.Add('WHERE TRIM(pr.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY pr.tgl_perawatan DESC, pr.jam_rawat DESC');
+
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      vObjSOAP := TJSONObject.Create;
+      vObjSOAP.Add('tanggal_pemeriksaan', vQ.FieldByName('tgl_perawatan').AsString);
+      vObjSOAP.Add('jam_pemeriksaan', vQ.FieldByName('jam_rawat').AsString);
+      vObjSOAP.Add('petugas_medis', Trim(vQ.FieldByName('nama').AsString));
+
+      // Data Inti SOAP
+      vObjSOAP.Add('s_subjektif', Trim(vQ.FieldByName('keluhan').AsString));
+      vObjSOAP.Add('o_objektif', Trim(vQ.FieldByName('pemeriksaan').AsString));
+      vObjSOAP.Add('a_assessment', Trim(vQ.FieldByName('penilaian').AsString));
+      vObjSOAP.Add('p_plan', Trim(vQ.FieldByName('rtl').AsString));
+      vObjSOAP.Add('instruksi', Trim(vQ.FieldByName('instruksi').AsString));
+      vObjSOAP.Add('evaluasi', Trim(vQ.FieldByName('evaluasi').AsString));
+
+      // Objek Bersarang untuk Tanda Vital (TTV)
+      vObjTTV := TJSONObject.Create;
+      vObjTTV.Add('tekanan_darah', Trim(vQ.FieldByName('tensi').AsString));
+      vObjTTV.Add('nadi', Trim(vQ.FieldByName('nadi').AsString));
+      vObjTTV.Add('respirasi', Trim(vQ.FieldByName('respirasi').AsString));
+      vObjTTV.Add('suhu_tubuh', Trim(vQ.FieldByName('suhu_tubuh').AsString));
+      vObjTTV.Add('spo2', Trim(vQ.FieldByName('spo2').AsString));
+      vObjTTV.Add('kesadaran', Trim(vQ.FieldByName('kesadaran').AsString));
+      vObjSOAP.Add('tanda_vital', vObjTTV);
+
+      Result.Add(vObjSOAP);
+      vQ.Next;
+    end;
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
+// HELPER DATA SOAP RAWAT INAP (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilSOAPRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQ: TZQuery;
+  vObjSOAP, vObjTTV: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT pr.tgl_perawatan, pr.jam_rawat, ');
+    vQ.SQL.Add('       pr.keluhan, pr.pemeriksaan, pr.penilaian, pr.rtl, ');
+    vQ.SQL.Add('       pr.instruksi, pr.evaluasi, ');
+    vQ.SQL.Add('       pr.tensi, pr.nadi, pr.respirasi, pr.suhu_tubuh, pr.spo2, ');
+    vQ.SQL.Add('       pr.kesadaran, pg.nama ');
+    vQ.SQL.Add('FROM pemeriksaan_ranap pr ');
+    vQ.SQL.Add('LEFT JOIN pegawai pg ON pr.nip = pg.nik ');
+    vQ.SQL.Add('WHERE TRIM(pr.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY pr.tgl_perawatan DESC, pr.jam_rawat DESC');
+
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      vObjSOAP := TJSONObject.Create;
+      vObjSOAP.Add('tanggal_pemeriksaan', vQ.FieldByName('tgl_perawatan').AsString);
+      vObjSOAP.Add('jam_pemeriksaan', vQ.FieldByName('jam_rawat').AsString);
+      vObjSOAP.Add('petugas_medis', Trim(vQ.FieldByName('nama').AsString));
+
+      // Data Inti SOAPE Ranap
+      vObjSOAP.Add('s_subjektif', Trim(vQ.FieldByName('keluhan').AsString));
+      vObjSOAP.Add('o_objektif', Trim(vQ.FieldByName('pemeriksaan').AsString));
+      vObjSOAP.Add('a_assessment', Trim(vQ.FieldByName('penilaian').AsString));
+      vObjSOAP.Add('p_plan', Trim(vQ.FieldByName('rtl').AsString));
+      vObjSOAP.Add('instruksi', Trim(vQ.FieldByName('instruksi').AsString));
+      vObjSOAP.Add('evaluasi', Trim(vQ.FieldByName('evaluasi').AsString));
+
+      // Sub-Object Tanda-Tanda Vital (TTV)
+      vObjTTV := TJSONObject.Create;
+      vObjTTV.Add('tekanan_darah', Trim(vQ.FieldByName('tensi').AsString));
+      vObjTTV.Add('nadi', Trim(vQ.FieldByName('nadi').AsString));
+      vObjTTV.Add('respirasi', Trim(vQ.FieldByName('respirasi').AsString));
+      vObjTTV.Add('suhu_tubuh', Trim(vQ.FieldByName('suhu_tubuh').AsString));
+      vObjTTV.Add('spo2', Trim(vQ.FieldByName('spo2').AsString));
+      vObjTTV.Add('kesadaran', Trim(vQ.FieldByName('kesadaran').AsString));
+      vObjSOAP.Add('tanda_vital', vObjTTV);
+
+      Result.Add(vObjSOAP);
+      vQ.Next;
+    end;
+
+  finally
+    vQ.Free;
+  end;
+end;
+
 
 // =================================================================
 // MAIN REQUEST HANDLER
@@ -602,7 +858,16 @@ begin
     JSONKunjungan.Add('asesmen_keperawatan_igd', AmbilAsesmenKeperawatanIGD(uhandlerapi.gZConn, vCurrentNoRawat));
 
     // SUNTIK DATA ASESMEN MEDIS IGD DOKTER DI SINI
-      JSONKunjungan.Add('penilaian_medis_igd', AmbilPenilaianMedisIGD(uhandlerapi.gZConn, vCurrentNoRawat));
+    JSONKunjungan.Add('penilaian_medis_igd', AmbilPenilaianMedisIGD(uhandlerapi.gZConn, vCurrentNoRawat));
+
+    // SUNTIK DATA TINDAKAN RAJAL & Ranap DI SINI
+    JSONKunjungan.Add('tindakan_rajal', AmbilTindakanRawatJalan(uhandlerapi.gZConn, vCurrentNoRawat));
+
+    JSONKunjungan.Add('tindakan_ranap', AmbilTindakanRawatInap(uhandlerapi.gZConn, vCurrentNoRawat));
+
+    // SUNTIK DATA SOAP RAWAT JALAN & rawat inap DI SINI
+    JSONKunjungan.Add('soap_rajal', AmbilSOAPRawatJalan(uhandlerapi.gZConn, vCurrentNoRawat));
+    JSONKunjungan.Add('soap_ranap', AmbilSOAPRawatInap(uhandlerapi.gZConn, vCurrentNoRawat));
 
     JSONRes.Add('kunjungan', JSONArrayKunjungan);
 

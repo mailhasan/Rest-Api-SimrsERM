@@ -73,6 +73,34 @@ var
   vQueryUser: TZQuery;
 begin
   Result := False;
+
+  // =================================================================
+  // KODINGAN SATPAM DISIPLIN TINGGI (ANTI GARBAGE BUFFER / SERVER GONE AWAY)
+  // =================================================================
+  try
+    // Cek fisik koneksi dengan Ping
+    if (not gZConn.Connected) or (not gZConn.Ping) then
+    begin
+      Writeln('-> [WARNING] Koneksi mati/stale terdeteksi. Melakukan Hard Reset Pool...');
+
+      gZConn.Disconnect;
+      // Memaksa driver Zeos mengosongkan semua buffer koneksi lama di memori
+      gZConn.Properties.Values['pooled'] := 'false';
+      gZConn.Properties.Values['pooled'] := 'true';
+
+      gZConn.Connect;
+      Writeln('-> [SUKSES] Pool database disegarkan total.');
+    end;
+  except
+    on E: Exception do
+    begin
+      Writeln('-> [CRITICAL] Database lumpuh total: ' + E.Message);
+      AResponse.Send('{"status": "error", "message": "Database server tidak merespon"}', 'application/json', 500);
+      Exit;
+    end;
+  end;
+  // =================================================================
+
   vToken := ARequest.Headers.Values['Authorization'];
 
   if vToken = '' then

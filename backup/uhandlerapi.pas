@@ -15,7 +15,7 @@ uses
   //umod_pasien; // <-- Jika membuat umod_dokter, umod_ranap, dst, tambahkan di sini separated by comma
   umod_getObatTanpaAuth,
   umod_inacbg,
-  umod_inacbg;
+  umod_riwayat;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
 
