@@ -24,6 +24,12 @@ type
     function AmbilTindakanRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
     function AmbilSOAPRawatJalan(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
     function AmbilSOAPRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+    function AmbilRiwayatObat(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+    function AmbilResepPulang(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+	function AmbilRiwayatLaboratorium(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+	function AmbilRiwayatRadiologi(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+	function AmbilRiwayatDiagnosa(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+	function AmbilRiwayatProsedur(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
   protected
     procedure DoRequest(ASender: TObject; ARoute: TBrookURLRoute; ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse) override;
   public
@@ -604,6 +610,356 @@ begin
 end;
 
 // =================================================================
+// HELPER DATA PEMBERIAN OBAT (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilRiwayatObat(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+var
+  vQ: TZQuery;
+  vArrDetail: TJSONArray;
+  vObjDetail: TJSONObject;
+  vGrandTotalObat: Double;
+  vTotalItem: Integer;
+begin
+  Result := TJSONObject.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+  
+  vGrandTotalObat := 0;
+  vTotalItem := 0;
+  vArrDetail := TJSONArray.Create;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT dpo.tgl_perawatan, dpo.jam, ');
+    vQ.SQL.Add('       db.nama_brng AS nama_obat, dpo.kode_brng, ');
+    vQ.SQL.Add('       dpo.jml AS jumlah, dpo.biaya_obat, dpo.embalase, ');
+    vQ.SQL.Add('       dpo.tuslah, dpo.total, dpo.status AS status_perawatan, ');
+    vQ.SQL.Add('       b.nm_bangsal AS nama_bangsal, dpo.no_batch, dpo.no_faktur ');
+    vQ.SQL.Add('FROM detail_pemberian_obat dpo ');
+    vQ.SQL.Add('LEFT JOIN databarang db ON dpo.kode_brng = db.kode_brng ');
+    vQ.SQL.Add('LEFT JOIN bangsal b ON dpo.kd_bangsal = b.kd_bangsal ');
+    vQ.SQL.Add('WHERE TRIM(dpo.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY dpo.tgl_perawatan DESC, dpo.jam DESC');
+    
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      Inc(vTotalItem);
+      vGrandTotalObat := vGrandTotalObat + vQ.FieldByName('total').AsFloat;
+
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('tanggal', vQ.FieldByName('tgl_perawatan').AsString);
+      vObjDetail.Add('jam', vQ.FieldByName('jam').AsString);
+      vObjDetail.Add('kode_obat', vQ.FieldByName('kode_brng').AsString);
+      vObjDetail.Add('nama_obat', Trim(vQ.FieldByName('nama_obat').AsString));
+      vObjDetail.Add('jumlah', vQ.FieldByName('jumlah').AsInteger);
+      vObjDetail.Add('biaya_satuan', FormatFloat('0.00', vQ.FieldByName('biaya_obat').AsFloat));
+      vObjDetail.Add('embalase', FormatFloat('0.00', vQ.FieldByName('embalase').AsFloat));
+      vObjDetail.Add('tuslah', FormatFloat('0.00', vQ.FieldByName('tuslah').AsFloat));
+      vObjDetail.Add('total_harga_item', FormatFloat('0.00', vQ.FieldByName('total').AsFloat));
+      vObjDetail.Add('status_perawatan', vQ.FieldByName('status_perawatan').AsString);
+      vObjDetail.Add('depo_bangsal', Trim(vQ.FieldByName('nama_bangsal').AsString));
+      vObjDetail.Add('no_batch', vQ.FieldByName('no_batch').AsString);
+      vObjDetail.Add('no_faktur', vQ.FieldByName('no_faktur').AsString);
+      
+      vArrDetail.Add(vObjDetail);
+      vQ.Next;
+    end;
+
+    // Rangkuman utama pemberian obat
+    Result.Add('has_data', vTotalItem > 0);
+    Result.Add('total_item_obat', vTotalItem);
+    Result.Add('grand_total_biaya_obat', FormatFloat('0.00', vGrandTotalObat));
+    Result.Add('detail_obat', vArrDetail);
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
+// HELPER DATA RESEP PULANG (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilResepPulang(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+var
+  vQ: TZQuery;
+  vArrDetail: TJSONArray;
+  vObjDetail: TJSONObject;
+  vGrandTotalResep: Double;
+  vTotalItem: Integer;
+begin
+  Result := TJSONObject.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+  
+  vGrandTotalResep := 0;
+  vTotalItem := 0;
+  vArrDetail := TJSONArray.Create;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT rp.tanggal, rp.jam, rp.kode_brng, ');
+    vQ.SQL.Add('       db.nama_brng AS nama_obat, rp.jml_barang AS jumlah, ');
+    vQ.SQL.Add('       rp.harga AS harga_satuan, rp.total, rp.dosis AS aturan_pakai, ');
+    vQ.SQL.Add('       b.nm_bangsal AS nama_bangsal, rp.no_batch, rp.no_faktur ');
+    vQ.SQL.Add('FROM resep_pulang rp ');
+    vQ.SQL.Add('LEFT JOIN databarang db ON rp.kode_brng = db.kode_brng ');
+    vQ.SQL.Add('LEFT JOIN bangsal b ON rp.kd_bangsal = b.kd_bangsal ');
+    vQ.SQL.Add('WHERE TRIM(rp.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY rp.tanggal DESC, rp.jam DESC');
+    
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      Inc(vTotalItem);
+      vGrandTotalResep := vGrandTotalResep + vQ.FieldByName('total').AsFloat;
+
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('tanggal', vQ.FieldByName('tanggal').AsString);
+      vObjDetail.Add('jam', vQ.FieldByName('jam').AsString);
+      vObjDetail.Add('kode_obat', vQ.FieldByName('kode_brng').AsString);
+      vObjDetail.Add('nama_obat', Trim(vQ.FieldByName('nama_obat').AsString));
+      vObjDetail.Add('jumlah', vQ.FieldByName('jumlah').AsInteger);
+      vObjDetail.Add('harga_satuan', FormatFloat('0.00', vQ.FieldByName('harga_satuan').AsFloat));
+      vObjDetail.Add('total_harga_item', FormatFloat('0.00', vQ.FieldByName('total').AsFloat));
+      vObjDetail.Add('aturan_pakai', Trim(vQ.FieldByName('aturan_pakai').AsString));
+      vObjDetail.Add('depo_bangsal', Trim(vQ.FieldByName('nama_bangsal').AsString));
+      vObjDetail.Add('no_batch', vQ.FieldByName('no_batch').AsString);
+      vObjDetail.Add('no_faktur', vQ.FieldByName('no_faktur').AsString);
+      
+      vArrDetail.Add(vObjDetail);
+      vQ.Next;
+    end;
+
+    // Masukkan data rangkuman ke object return utama
+    Result.Add('has_data', vTotalItem > 0);
+    Result.Add('total_item_resep', vTotalItem);
+    Result.Add('grand_total_biaya_resep', FormatFloat('0.00', vGrandTotalResep));
+    Result.Add('detail_resep', vArrDetail);
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
+// PERBAIKAN: HELPER DATA PEMERIKSAAN LAB (FIX PARAMETER HASIL KOSONG)
+// =================================================================
+function TRouteRiwayatPasien.AmbilRiwayatLaboratorium(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQHeader, vQDetail: TZQuery;
+  vObjHeader, vObjDetail: TJSONObject;
+  vArrDetail: TJSONArray;
+  vKdJenisPrw: string;
+  vTgl: TDateTime;
+  vJam: TDateTime;
+begin
+  Result := TJSONArray.Create;
+  
+  vQHeader := TZQuery.Create(nil);
+  vQHeader.Connection := gZConn;
+  
+  vQDetail := TZQuery.Create(nil);
+  vQDetail.Connection := gZConn;
+
+  try
+    // 1. Ambil Semua Paket Pemeriksaan Lab Pasien (Header)
+    vQHeader.SQL.Clear;
+    vQHeader.SQL.Add('SELECT pl.tgl_periksa, pl.jam, jpl.nm_perawatan AS nama_pemeriksaan, ');
+    vQHeader.SQL.Add('       pl.kd_jenis_prw, pl.biaya AS total_biaya, pl.status AS status_rawat, ');
+    vQHeader.SQL.Add('       pl.kategori AS kategori_lab, dk.nm_dokter AS dokter_pemeriksa, ');
+    vQHeader.SQL.Add('       dk_perujuk.nm_dokter AS dokter_perujuk ');
+    vQHeader.SQL.Add('FROM periksa_lab pl ');
+    vQHeader.SQL.Add('LEFT JOIN jns_perawatan_lab jpl ON pl.kd_jenis_prw = jpl.kd_jenis_prw ');
+    vQHeader.SQL.Add('LEFT JOIN dokter dk ON pl.kd_dokter = dk.kd_dokter ');
+    vQHeader.SQL.Add('LEFT JOIN dokter dk_perujuk ON pl.dokter_perujuk = dk_perujuk.kd_dokter ');
+    vQHeader.SQL.Add('WHERE TRIM(pl.no_rawat) = :no_rawat ');
+    vQHeader.SQL.Add('ORDER BY pl.tgl_periksa DESC, pl.jam DESC');
+    
+    vQHeader.ParamByName('no_rawat').AsString := ANoRawat;
+    vQHeader.Open;
+
+    while not vQHeader.EOF do
+    begin
+      // Ambil nilai asli tipe TDateTime untuk parameter query detail
+      vKdJenisPrw := vQHeader.FieldByName('kd_jenis_prw').AsString;
+      vTgl        := vQHeader.FieldByName('tgl_periksa').AsDateTime;
+      vJam        := vQHeader.FieldByName('jam').AsDateTime;
+
+      vObjHeader := TJSONObject.Create;
+      vObjHeader.Add('tanggal', FormatDateTime('yyyy-MM-dd', vTgl));
+      vObjHeader.Add('jam', FormatDateTime('hh:nn:ss', vJam));
+      vObjHeader.Add('kode_pemeriksaan', Trim(vKdJenisPrw));
+      vObjHeader.Add('nama_pemeriksaan', Trim(vQHeader.FieldByName('nama_pemeriksaan').AsString));
+      vObjHeader.Add('kategori_lab', vQHeader.FieldByName('kategori_lab').AsString);
+      vObjHeader.Add('status_rawat', vQHeader.FieldByName('status_rawat').AsString);
+      vObjHeader.Add('dokter_pemeriksa', Trim(vQHeader.FieldByName('dokter_pemeriksa').AsString));
+      vObjHeader.Add('dokter_perujuk', Trim(vQHeader.FieldByName('dokter_perujuk').AsString));
+      vObjHeader.Add('total_biaya_paket', FormatFloat('0.00', vQHeader.FieldByName('total_biaya').AsFloat));
+
+      // 2. Sub-Query Detail menggunakan tipe data aslinya & TRIM pada kd_jenis_prw
+      vArrDetail := TJSONArray.Create;
+      vQDetail.SQL.Clear;
+      vQDetail.SQL.Add('SELECT tl.Pemeriksaan AS nama_template, tl.satuan, dpl.nilai AS hasil, ');
+      vQDetail.SQL.Add('       dpl.nilai_rujukan, dpl.keterangan AS status_hasil ');
+      vQDetail.SQL.Add('FROM detail_periksa_lab dpl ');
+      vQDetail.SQL.Add('LEFT JOIN template_laboratorium tl ON dpl.id_template = tl.id_template ');
+      vQDetail.SQL.Add('WHERE TRIM(dpl.no_rawat) = :no_rawat ');
+      vQDetail.SQL.Add('  AND TRIM(dpl.kd_jenis_prw) = :kd_jenis_prw ');
+      vQDetail.SQL.Add('  AND dpl.tgl_periksa = :tgl_periksa ');
+      vQDetail.SQL.Add('  AND dpl.jam = :jam ');
+      vQDetail.SQL.Add('ORDER BY tl.urut ASC');
+      
+      vQDetail.ParamByName('no_rawat').AsString := ANoRawat;
+      vQDetail.ParamByName('kd_jenis_prw').AsString := Trim(vKdJenisPrw);
+      vQDetail.ParamByName('tgl_periksa').AsDate := vTgl;  // Menggunakan AsDate
+      vQDetail.ParamByName('jam').AsTime := vJam;          // Menggunakan AsTime
+      vQDetail.Open;
+
+      while not vQDetail.EOF do
+      begin
+        vObjDetail := TJSONObject.Create;
+        vObjDetail.Add('parameter_uji', Trim(vQDetail.FieldByName('nama_template').AsString));
+        vObjDetail.Add('hasil', Trim(vQDetail.FieldByName('hasil').AsString));
+        vObjDetail.Add('satuan', Trim(vQDetail.FieldByName('satuan').AsString));
+        vObjDetail.Add('nilai_rujukan', Trim(vQDetail.FieldByName('nilai_rujukan').AsString));
+        vObjDetail.Add('status_kondisi', Trim(vQDetail.FieldByName('status_hasil').AsString));
+        
+        vArrDetail.Add(vObjDetail);
+        vQDetail.Next;
+      end;
+      vQDetail.Close;
+
+      vObjHeader.Add('parameter_hasil', vArrDetail);
+      Result.Add(vObjHeader);
+      
+      vQHeader.Next;
+    end;
+
+  finally
+    vQHeader.Free;
+    vQDetail.Free;
+  end;
+end;
+
+// =================================================================
+// HELPER DATA RADIOLOGI (HEADER BILLING + EKSPERTISE + PACS IMAGES)
+// =================================================================
+function TRouteRiwayatPasien.AmbilRiwayatRadiologi(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQHeader, vQHasil, vQPacs: TZQuery;
+  vObjHeader, vObjPacs: TJSONObject;
+  vArrPacs: TJSONArray;
+  vKdJenisPrw: string;
+  vTgl, vJam: TDateTime;
+  vNarasiHasil: string;
+begin
+  Result := TJSONArray.Create;
+  
+  vQHeader := TZQuery.Create(nil); vQHeader.Connection := gZConn;
+  vQHasil  := TZQuery.Create(nil); vQHasil.Connection := gZConn;
+  vQPacs   := TZQuery.Create(nil); vQPacs.Connection := gZConn;
+
+  try
+    // 1. Ambil Pemeriksaan Radiologi Utama (Header Billing & Faktor Eksposure)
+    vQHeader.SQL.Clear;
+    vQHeader.SQL.Add('SELECT pr.tgl_periksa, pr.jam, jpr.nm_perawatan AS nama_pemeriksaan, ');
+    vQHeader.SQL.Add('       pr.kd_jenis_prw, pr.biaya AS total_biaya, pr.status AS status_rawat, ');
+    vQHeader.SQL.Add('       pr.proyeksi, pr.kV, pr.mAS, pr.FFD, pr.BSF, pr.inak, ');
+    vQHeader.SQL.Add('       pr.jml_penyinaran, pr.dosis, dk.nm_dokter AS dokter_pemeriksa, ');
+    vQHeader.SQL.Add('       dk_perujuk.nm_dokter AS dokter_perujuk ');
+    vQHeader.SQL.Add('FROM periksa_radiologi pr ');
+    vQHeader.SQL.Add('LEFT JOIN jns_perawatan_radiologi jpr ON pr.kd_jenis_prw = jpr.kd_jenis_prw ');
+    vQHeader.SQL.Add('LEFT JOIN dokter dk ON pr.kd_dokter = dk.kd_dokter ');
+    vQHeader.SQL.Add('LEFT JOIN dokter dk_perujuk ON pr.dokter_perujuk = dk_perujuk.kd_dokter ');
+    vQHeader.SQL.Add('WHERE TRIM(pr.no_rawat) = :no_rawat ');
+    vQHeader.SQL.Add('ORDER BY pr.tgl_periksa DESC, pr.jam DESC');
+    
+    vQHeader.ParamByName('no_rawat').AsString := ANoRawat;
+    vQHeader.Open;
+
+    while not vQHeader.EOF do
+    begin
+      vKdJenisPrw := vQHeader.FieldByName('kd_jenis_prw').AsString;
+      vTgl        := vQHeader.FieldByName('tgl_periksa').AsDateTime;
+      vJam        := vQHeader.FieldByName('jam').AsDateTime;
+
+      vObjHeader := TJSONObject.Create;
+      vObjHeader.Add('tanggal', FormatDateTime('yyyy-MM-dd', vTgl));
+      vObjHeader.Add('jam', FormatDateTime('hh:nn:ss', vJam));
+      vObjHeader.Add('kode_pemeriksaan', Trim(vKdJenisPrw));
+      vObjHeader.Add('nama_pemeriksaan', Trim(vQHeader.FieldByName('nama_pemeriksaan').AsString));
+      vObjHeader.Add('status_rawat', vQHeader.FieldByName('status_rawat').AsString);
+      vObjHeader.Add('dokter_pemeriksa', Trim(vQHeader.FieldByName('dokter_pemeriksa').AsString));
+      vObjHeader.Add('dokter_perujuk', Trim(vQHeader.FieldByName('dokter_perujuk').AsString));
+      vObjHeader.Add('total_biaya_paket', FormatFloat('0.00', vQHeader.FieldByName('total_biaya').AsFloat));
+      
+      // Teknis Alat & Proyeksi
+      vObjHeader.Add('proyeksi', Trim(vQHeader.FieldByName('proyeksi').AsString));
+      vObjHeader.Add('kv', Trim(vQHeader.FieldByName('kV').AsString));
+      vObjHeader.Add('mas', Trim(vQHeader.FieldByName('mAS').AsString));
+      vObjHeader.Add('ffd', Trim(vQHeader.FieldByName('FFD').AsString));
+      vObjHeader.Add('dosis_radiasi', Trim(vQHeader.FieldByName('dosis').AsString));
+
+      // 2. Sub-Query Narasi Hasil Ekspertise (Filter: no_rawat, tgl, jam)
+      vNarasiHasil := '';
+      vQHasil.SQL.Clear;
+      vQHasil.SQL.Add('SELECT hr.hasil FROM hasil_radiologi hr ');
+      vQHasil.SQL.Add('WHERE TRIM(hr.no_rawat) = :no_rawat ');
+      vQHasil.SQL.Add('  AND hr.tgl_periksa = :tgl_periksa ');
+      vQHasil.SQL.Add('  AND hr.jam = :jam ');
+      
+      vQHasil.ParamByName('no_rawat').AsString := ANoRawat;
+      vQHasil.ParamByName('tgl_periksa').AsDate := vTgl;
+      vQHasil.ParamByName('jam').AsTime := vJam;
+      vQHasil.Open;
+      
+      if not vQHasil.IsEmpty then
+        vNarasiHasil := Trim(vQHasil.FieldByName('hasil').AsString);
+      vQHasil.Close;
+      
+      vObjHeader.Add('hasil_ekspertise', vNarasiHasil);
+
+      // 3. Sub-Query Mengambil Daftar Gambar PACS DICOM (Filter: no_rawat, tgl, jam)
+      vArrPacs := TJSONArray.Create;
+      vQPacs.SQL.Clear;
+      vQPacs.SQL.Add('SELECT grp.lokasi_gambar FROM gambar_radiologi_pacs grp ');
+      vQPacs.SQL.Add('WHERE TRIM(grp.no_rawat) = :no_rawat ');
+      vQPacs.SQL.Add('  AND grp.tgl_periksa = :tgl_periksa ');
+      vQPacs.SQL.Add('  AND grp.jam = :jam ');
+      
+      vQPacs.ParamByName('no_rawat').AsString := ANoRawat;
+      vQPacs.ParamByName('tgl_periksa').AsDate := vTgl;
+      vQPacs.ParamByName('jam').AsTime := vJam;
+      vQPacs.Open;
+
+      while not vQPacs.EOF do
+      begin
+        vObjPacs := TJSONObject.Create;
+        vObjPacs.Add('url_gambar', Trim(vQPacs.FieldByName('lokasi_gambar').AsString));
+        vArrPacs.Add(vObjPacs);
+        vQPacs.Next;
+      end;
+      vQPacs.Close;
+
+      vObjHeader.Add('gambar_pacs', vArrPacs);
+      Result.Add(vObjHeader);
+      
+      vQHeader.Next;
+    end;
+
+  finally
+    vQHeader.Free;
+    vQHasil.Free;
+    vQPacs.Free;
+  end;
+end;
+
+// =================================================================
 // HELPER DATA SOAP RAWAT JALAN (KONVERSI LOGIKA LAZARUS KE JSON)
 // =================================================================
 function TRouteRiwayatPasien.AmbilSOAPRawatJalan(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
@@ -665,6 +1021,57 @@ begin
 end;
 
 // =================================================================
+// HELPER DATA DIAGNOSA / ICD-10 (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilRiwayatDiagnosa(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQ: TZQuery;
+  vObjDetail: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT dp.prioritas, ');
+    vQ.SQL.Add('       CASE WHEN dp.prioritas = 1 THEN "DIAGNOSA UTAMA" ELSE "DIAGNOSA SEKUNDER" END AS jenis, ');
+    vQ.SQL.Add('       p.nm_penyakit AS diagnosis, p.kd_penyakit AS kode_icd, ');
+    vQ.SQL.Add('       dp.status_penyakit AS status_penyakit, ');
+    vQ.SQL.Add('       CASE WHEN dp.status_penyakit = "Baru" THEN "Baru terdiagnosis" ');
+    vQ.SQL.Add('            WHEN dp.status_penyakit = "Lama" THEN "Sudah pernah terdiagnosis sebelumnya" END AS keterangan_status, ');
+    vQ.SQL.Add('       p.status AS klasifikasi_menular, kp.nm_kategori AS kategori_penyakit ');
+    vQ.SQL.Add('FROM diagnosa_pasien dp ');
+    vQ.SQL.Add('LEFT JOIN penyakit p ON dp.kd_penyakit = p.kd_penyakit ');
+    vQ.SQL.Add('LEFT JOIN kategori_penyakit kp ON p.kd_ktg = kp.kd_ktg ');
+    vQ.SQL.Add('WHERE TRIM(dp.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY dp.prioritas ASC');
+    
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('prioritas', vQ.FieldByName('prioritas').AsInteger);
+      vObjDetail.Add('jenis_diagnosa', vQ.FieldByName('jenis').AsString);
+      vObjDetail.Add('kode_icd10', Trim(vQ.FieldByName('kode_icd').AsString));
+      vObjDetail.Add('nama_penyakit', Trim(vQ.FieldByName('diagnosis').AsString));
+      vObjDetail.Add('status_kasus', vQ.FieldByName('status_penyakit').AsString); // Baru / Lama
+      vObjDetail.Add('keterangan_status', vQ.FieldByName('keterangan_status').AsString);
+      vObjDetail.Add('klasifikasi_menular', Trim(vQ.FieldByName('klasifikasi_menular').AsString));
+      vObjDetail.Add('kategori_penyakit', Trim(vQ.FieldByName('kategori_penyakit').AsString));
+      
+      Result.Add(vObjDetail);
+      vQ.Next;
+    end;
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
 // HELPER DATA SOAP RAWAT INAP (KONVERSI LOGIKA LAZARUS KE JSON)
 // =================================================================
 function TRouteRiwayatPasien.AmbilSOAPRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
@@ -717,6 +1124,51 @@ begin
       vObjSOAP.Add('tanda_vital', vObjTTV);
 
       Result.Add(vObjSOAP);
+      vQ.Next;
+    end;
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
+// HELPER DATA PROSEDUR / ICD-9 CM (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilRiwayatProsedur(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQ: TZQuery;
+  vObjDetail: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT pp.kode, i.deskripsi_panjang AS nama_prosedur, ');
+    vQ.SQL.Add('       i.deskripsi_pendek AS prosedur_singkat, pp.status AS status_rawat, ');
+    vQ.SQL.Add('       pp.prioritas, ');
+    vQ.SQL.Add('       CASE WHEN pp.prioritas = 1 THEN "Prosedur Utama" ELSE "Prosedur Tambahan" END AS jenis_prosedur ');
+    vQ.SQL.Add('FROM prosedur_pasien pp ');
+    vQ.SQL.Add('LEFT JOIN icd9 i ON pp.kode = i.kode ');
+    vQ.SQL.Add('WHERE TRIM(pp.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY pp.prioritas ASC');
+    
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('prioritas', vQ.FieldByName('prioritas').AsInteger);
+      vObjDetail.Add('jenis_prosedur', vQ.FieldByName('jenis_prosedur').AsString);
+      vObjDetail.Add('kode_icd9', Trim(vQ.FieldByName('kode').AsString));
+      vObjDetail.Add('nama_prosedur', Trim(vQ.FieldByName('nama_prosedur').AsString));
+      vObjDetail.Add('prosedur_singkat', Trim(vQ.FieldByName('prosedur_singkat').AsString));
+      vObjDetail.Add('status_rawat', vQ.FieldByName('status_rawat').AsString); // Ralan / Ranap
+      
+      Result.Add(vObjDetail);
       vQ.Next;
     end;
 
@@ -854,20 +1306,39 @@ begin
 
     // SUNTIK DATA TRIASE IGD DI SINI
     JSONKunjungan.Add('triase_igd', AmbilDataTriaseIGD(uhandlerapi.gZConn, vCurrentNoRawat));
+	
     // SUNTIK DATA ASESMEN KEPERAWATAN IGD DI SINI
     JSONKunjungan.Add('asesmen_keperawatan_igd', AmbilAsesmenKeperawatanIGD(uhandlerapi.gZConn, vCurrentNoRawat));
 
     // SUNTIK DATA ASESMEN MEDIS IGD DOKTER DI SINI
     JSONKunjungan.Add('penilaian_medis_igd', AmbilPenilaianMedisIGD(uhandlerapi.gZConn, vCurrentNoRawat));
+	
+	// SUNTIK DATA DIAGNOSA / ICD-10 DI SINI (TAMBAHKAN BARIS INI)
+    JSONKunjungan.Add('diagnosa_icd10', AmbilRiwayatDiagnosa(uhandlerapi.gZConn, vCurrentNoRawat));
+	  
+	// SUNTIK DATA PROSEDUR / ICD-9 CM DI SINI (TAMBAHKAN BARIS INI)
+    JSONKunjungan.Add('prosedur_icd9', AmbilRiwayatProsedur(uhandlerapi.gZConn, vCurrentNoRawat));
+	
+	 // SUNTIK DATA SOAP RAWAT JALAN & rawat inap DI SINI
+    JSONKunjungan.Add('soap_rajal', AmbilSOAPRawatJalan(uhandlerapi.gZConn, vCurrentNoRawat));
+    JSONKunjungan.Add('soap_ranap', AmbilSOAPRawatInap(uhandlerapi.gZConn, vCurrentNoRawat));
 
     // SUNTIK DATA TINDAKAN RAJAL & Ranap DI SINI
     JSONKunjungan.Add('tindakan_rajal', AmbilTindakanRawatJalan(uhandlerapi.gZConn, vCurrentNoRawat));
 
     JSONKunjungan.Add('tindakan_ranap', AmbilTindakanRawatInap(uhandlerapi.gZConn, vCurrentNoRawat));
-
-    // SUNTIK DATA SOAP RAWAT JALAN & rawat inap DI SINI
-    JSONKunjungan.Add('soap_rajal', AmbilSOAPRawatJalan(uhandlerapi.gZConn, vCurrentNoRawat));
-    JSONKunjungan.Add('soap_ranap', AmbilSOAPRawatInap(uhandlerapi.gZConn, vCurrentNoRawat));
+	
+	// SUNTIK DATA PEMERIKSAAN LABORATORIUM DI SINI (TAMBAHKAN BARIS INI)
+      JSONKunjungan.Add('laboratorium', AmbilRiwayatLaboratorium(gZConn, vCurrentNoRawat));
+	
+	// SUNTIK DATA PEMERIKSAAN RADIOLOGI DI SINI (TAMBAHKAN BARIS INI)
+      JSONKunjungan.Add('radiologi', AmbilRiwayatRadiologi(uhandlerapi.gZConn, vCurrentNoRawat));	
+	
+    // SUNTIK DATA PEMBERIAN OBAT DI SINI (TAMBAHKAN BARIS INI)
+    JSONKunjungan.Add('pemberian_obat', AmbilRiwayatObat(uhandlerapi.gZConn, vCurrentNoRawat));
+	// SUNTIK DATA RESEP PULANG DI SINI (TAMBAHKAN BARIS INI)
+    JSONKunjungan.Add('resep_pulang', AmbilResepPulang(uhandlerapi.gZConn, vCurrentNoRawat));
+   
 
     JSONRes.Add('kunjungan', JSONArrayKunjungan);
 
