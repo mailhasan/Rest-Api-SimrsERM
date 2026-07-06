@@ -26,8 +26,11 @@ type
     function AmbilSOAPRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
     function AmbilRiwayatObat(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
     function AmbilResepPulang(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
-	function AmbilRiwayatLaboratorium(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
-	function AmbilRiwayatRadiologi(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+    function AmbilRiwayatLaboratorium(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+    function AmbilRiwayatRadiologi(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+    function AmbilRiwayatDiagnosa(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+    function AmbilRiwayatProsedur(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+    function AmbilAsesmenKeperawatanRanap(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
   protected
     procedure DoRequest(ASender: TObject; ARoute: TBrookURLRoute; ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse) override;
   public
@@ -891,7 +894,7 @@ begin
       vObjHeader.Add('jam', FormatDateTime('hh:nn:ss', vJam));
       vObjHeader.Add('kode_pemeriksaan', Trim(vKdJenisPrw));
       vObjHeader.Add('nama_pemeriksaan', Trim(vQHeader.FieldByName('nama_pemeriksaan').AsString));
-      vObjHeader.Add('status_rawat', vQHeader.FieldByName('status_rawat').AsString));
+      vObjHeader.Add('status_rawat', vQHeader.FieldByName('status_rawat').AsString);
       vObjHeader.Add('dokter_pemeriksa', Trim(vQHeader.FieldByName('dokter_pemeriksa').AsString));
       vObjHeader.Add('dokter_perujuk', Trim(vQHeader.FieldByName('dokter_perujuk').AsString));
       vObjHeader.Add('total_biaya_paket', FormatFloat('0.00', vQHeader.FieldByName('total_biaya').AsFloat));
@@ -1019,6 +1022,57 @@ begin
 end;
 
 // =================================================================
+// HELPER DATA DIAGNOSA / ICD-10 (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilRiwayatDiagnosa(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQ: TZQuery;
+  vObjDetail: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT dp.prioritas, ');
+    vQ.SQL.Add('       CASE WHEN dp.prioritas = 1 THEN "DIAGNOSA UTAMA" ELSE "DIAGNOSA SEKUNDER" END AS jenis, ');
+    vQ.SQL.Add('       p.nm_penyakit AS diagnosis, p.kd_penyakit AS kode_icd, ');
+    vQ.SQL.Add('       dp.status_penyakit AS status_penyakit, ');
+    vQ.SQL.Add('       CASE WHEN dp.status_penyakit = "Baru" THEN "Baru terdiagnosis" ');
+    vQ.SQL.Add('            WHEN dp.status_penyakit = "Lama" THEN "Sudah pernah terdiagnosis sebelumnya" END AS keterangan_status, ');
+    vQ.SQL.Add('       p.status AS klasifikasi_menular, kp.nm_kategori AS kategori_penyakit ');
+    vQ.SQL.Add('FROM diagnosa_pasien dp ');
+    vQ.SQL.Add('LEFT JOIN penyakit p ON dp.kd_penyakit = p.kd_penyakit ');
+    vQ.SQL.Add('LEFT JOIN kategori_penyakit kp ON p.kd_ktg = kp.kd_ktg ');
+    vQ.SQL.Add('WHERE TRIM(dp.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY dp.prioritas ASC');
+    
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('prioritas', vQ.FieldByName('prioritas').AsInteger);
+      vObjDetail.Add('jenis_diagnosa', vQ.FieldByName('jenis').AsString);
+      vObjDetail.Add('kode_icd10', Trim(vQ.FieldByName('kode_icd').AsString));
+      vObjDetail.Add('nama_penyakit', Trim(vQ.FieldByName('diagnosis').AsString));
+      vObjDetail.Add('status_kasus', vQ.FieldByName('status_penyakit').AsString); // Baru / Lama
+      vObjDetail.Add('keterangan_status', vQ.FieldByName('keterangan_status').AsString);
+      vObjDetail.Add('klasifikasi_menular', Trim(vQ.FieldByName('klasifikasi_menular').AsString));
+      vObjDetail.Add('kategori_penyakit', Trim(vQ.FieldByName('kategori_penyakit').AsString));
+      
+      Result.Add(vObjDetail);
+      vQ.Next;
+    end;
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
 // HELPER DATA SOAP RAWAT INAP (KONVERSI LOGIKA LAZARUS KE JSON)
 // =================================================================
 function TRouteRiwayatPasien.AmbilSOAPRawatInap(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
@@ -1072,6 +1126,265 @@ begin
 
       Result.Add(vObjSOAP);
       vQ.Next;
+    end;
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+
+
+// =================================================================
+// HELPER DATA PROSEDUR / ICD-9 CM (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilRiwayatProsedur(gZConn: TZConnection; const ANoRawat: string): TJSONArray;
+var
+  vQ: TZQuery;
+  vObjDetail: TJSONObject;
+begin
+  Result := TJSONArray.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT pp.kode, i.deskripsi_panjang AS nama_prosedur, ');
+    vQ.SQL.Add('       i.deskripsi_pendek AS prosedur_singkat, pp.status AS status_rawat, ');
+    vQ.SQL.Add('       pp.prioritas, ');
+    vQ.SQL.Add('       CASE WHEN pp.prioritas = 1 THEN "Prosedur Utama" ELSE "Prosedur Tambahan" END AS jenis_prosedur ');
+    vQ.SQL.Add('FROM prosedur_pasien pp ');
+    vQ.SQL.Add('LEFT JOIN icd9 i ON pp.kode = i.kode ');
+    vQ.SQL.Add('WHERE TRIM(pp.no_rawat) = :no_rawat ');
+    vQ.SQL.Add('ORDER BY pp.prioritas ASC');
+    
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    while not vQ.EOF do
+    begin
+      vObjDetail := TJSONObject.Create;
+      vObjDetail.Add('prioritas', vQ.FieldByName('prioritas').AsInteger);
+      vObjDetail.Add('jenis_prosedur', vQ.FieldByName('jenis_prosedur').AsString);
+      vObjDetail.Add('kode_icd9', Trim(vQ.FieldByName('kode').AsString));
+      vObjDetail.Add('nama_prosedur', Trim(vQ.FieldByName('nama_prosedur').AsString));
+      vObjDetail.Add('prosedur_singkat', Trim(vQ.FieldByName('prosedur_singkat').AsString));
+      vObjDetail.Add('status_rawat', vQ.FieldByName('status_rawat').AsString); // Ralan / Ranap
+      
+      Result.Add(vObjDetail);
+      vQ.Next;
+    end;
+
+  finally
+    vQ.Free;
+  end;
+end;
+
+// =================================================================
+// HELPER ASESMEN KEPERAWATAN RANAP (KONVERSI LOGIKA LAZARUS KE JSON)
+// =================================================================
+function TRouteRiwayatPasien.AmbilAsesmenKeperawatanRanap(gZConn: TZConnection; const ANoRawat: string): TJSONObject;
+var
+  vQ: TZQuery;
+begin
+  Result := TJSONObject.Create;
+  vQ := TZQuery.Create(nil);
+  vQ.Connection := gZConn;
+
+  try
+    vQ.SQL.Clear;
+    vQ.SQL.Add('SELECT DATE_FORMAT(pk.tanggal, "%Y-%m-%d %H:%i:%s") AS tanggal_format, ');
+    vQ.SQL.Add('       pk.informasi AS anamnesis, pk.tiba_diruang_rawat AS tiba_di_ruang_rawat, ');
+    vQ.SQL.Add('       pk.cara_masuk, pk.kasus_trauma AS macam_kasus, ');
+    vQ.SQL.Add('       p1.nama AS pengkaji_1, p2.nama AS pengkaji_2, d.nm_dokter AS dpjp, ');
+
+    // I. Riwayat Kesehatan
+    vQ.SQL.Add('       pk.rps AS riwayat_penyakit_saat_ini, pk.rpd AS riwayat_penyakit_dahulu, ');
+    vQ.SQL.Add('       pk.rpk AS riwayat_penyakit_keluarga, pk.rpo AS riwayat_penggunaan_obat, ');
+    vQ.SQL.Add('       pk.riwayat_pembedahan, pk.riwayat_dirawat_dirs AS riwayat_dirawat_di_rs, ');
+    vQ.SQL.Add('       pk.alat_bantu_dipakai AS alat_bantu, pk.riwayat_kehamilan AS hamil, ');
+    vQ.SQL.Add('       pk.riwayat_kehamilan_perkiraan AS keterangan_hamil, pk.riwayat_tranfusi AS riwayat_transfusi, ');
+    vQ.SQL.Add('       pk.riwayat_alergi, ');
+    vQ.SQL.Add('       CONCAT("Merokok : ", pk.riwayat_merokok, " Alkohol : ", pk.riwayat_alkohol, ');
+    vQ.SQL.Add('              " Obat Tidur : ", pk.riwayat_narkoba, " Olah Raga : ", pk.riwayat_olahraga) AS kebiasaan, ');
+
+    // Tanda Vital
+    vQ.SQL.Add('       CONCAT("Keadaan Umum : ", pk.pemeriksaan_keadaan_umum, ');
+    vQ.SQL.Add('              " GCS(E,V,M) : ", pk.pemeriksaan_gcs, ');
+    vQ.SQL.Add('              " TD : ", pk.pemeriksaan_td, " mmHg", ');
+    vQ.SQL.Add('              " Nadi : ", pk.pemeriksaan_nadi, " x/menit", ');
+    vQ.SQL.Add('              " RR : ", pk.pemeriksaan_rr, " x/menit", ');
+    vQ.SQL.Add('              " Suhu : ", pk.pemeriksaan_suhu, " °C", ');
+    vQ.SQL.Add('              " SpO2 : ", pk.pemeriksaan_spo2, " %", ');
+    vQ.SQL.Add('              " BB : ", IFNULL(pk.pemeriksaan_bb, "-"), " Kg", ');
+    vQ.SQL.Add('              " TB : ", IFNULL(pk.pemeriksaan_tb, "-"), " cm") AS tanda_vital, ');
+
+    // Sistem Organ
+    vQ.SQL.Add('       CONCAT("Kepala : ", pk.pemeriksaan_susunan_kepala, ", ", pk.pemeriksaan_susunan_kepala_keterangan, ');
+    vQ.SQL.Add('              " Wajah : ", pk.pemeriksaan_susunan_wajah, ", ", pk.pemeriksaan_susunan_wajah_keterangan, ');
+    vQ.SQL.Add('              " Leher : ", pk.pemeriksaan_susunan_leher, ');
+    vQ.SQL.Add('              " Kejang : ", pk.pemeriksaan_susunan_kejang, ", ", pk.pemeriksaan_susunan_kejang_keterangan) AS sistem_saraf, ');
+
+    vQ.SQL.Add('       CONCAT("Pulsasi : ", pk.pemeriksaan_kardiovaskuler_pulsasi, ');
+    vQ.SQL.Add('              " Sirkulasi : ", pk.pemeriksaan_kardiovaskuler_sirkulasi, ", ", pk.pemeriksaan_kardiovaskuler_sirkulasi_keterangan, ');
+    vQ.SQL.Add('              " Denyut Nadi : ", pk.pemeriksaan_kardiovaskuler_denyut_nadi) AS kardiovaskuler, ');
+
+    vQ.SQL.Add('       CONCAT("Retraksi : ", pk.pemeriksaan_respirasi_retraksi, ');
+    vQ.SQL.Add('              " Pola Nafas : ", pk.pemeriksaan_respirasi_pola_nafas, ');
+    vQ.SQL.Add('              " Suara Nafas : ", pk.pemeriksaan_respirasi_suara_nafas, ');
+    vQ.SQL.Add('              " Batuk & Sekresi : ", pk.pemeriksaan_respirasi_batuk, ');
+    vQ.SQL.Add('              " Volume : ", pk.pemeriksaan_respirasi_volume_pernafasan, ');
+    vQ.SQL.Add('              " Jenis Pernafasaan : ", pk.pemeriksaan_respirasi_jenis_pernafasan, ", ", pk.pemeriksaan_respirasi_jenis_pernafasan_keterangan, ');
+    vQ.SQL.Add('              " Irama : ", pk.pemeriksaan_respirasi_irama_nafas) AS respirasi, ');
+
+    vQ.SQL.Add('       CONCAT("Mulut : ", pk.pemeriksaan_gastrointestinal_mulut, ", ", pk.pemeriksaan_gastrointestinal_mulut_keterangan, ');
+    vQ.SQL.Add('              " Lidah : ", pk.pemeriksaan_gastrointestinal_lidah, ", ", pk.pemeriksaan_gastrointestinal_lidah_keterangan, ');
+    vQ.SQL.Add('              " Gigi : ", pk.pemeriksaan_gastrointestinal_gigi, ", ", pk.pemeriksaan_gastrointestinal_gigi_keterangan, ');
+    vQ.SQL.Add('              " Tenggorokan : ", pk.pemeriksaan_gastrointestinal_tenggorokan, ", ", pk.pemeriksaan_gastrointestinal_tenggorokan_keterangan, ');
+    vQ.SQL.Add('              " Abdomen : ", pk.pemeriksaan_gastrointestinal_abdomen, ", ", pk.pemeriksaan_gastrointestinal_abdomen_keterangan, ');
+    vQ.SQL.Add('              " Peistatik Usus : ", pk.pemeriksaan_gastrointestinal_peistatik_usus, ');
+    vQ.SQL.Add('              " Anus : ", pk.pemeriksaan_gastrointestinal_anus) AS gastrointestinal, ');
+
+    vQ.SQL.Add('       CONCAT("Sensorik : ", pk.pemeriksaan_neurologi_sensorik, ');
+    vQ.SQL.Add('              " Penglihatan : ", pk.pemeriksaan_neurologi_pengelihatan, ", ", pk.pemeriksaan_neurologi_pengelihatan_keterangan, ');
+    vQ.SQL.Add('              " Alat Bantu Penglihatan : ", pk.pemeriksaan_neurologi_alat_bantu_penglihatan, ');
+    vQ.SQL.Add('              " Motorik : ", pk.pemeriksaan_neurologi_motorik, ');
+    vQ.SQL.Add('              " Bicara : ", pk.pemeriksaan_neurologi_bicara, ');
+    vQ.SQL.Add('              " Pendengaran : ", pk.pemeriksaan_neurologi_pendengaran, ');
+    vQ.SQL.Add('              " Kekuatan Otot : ", pk.pemeriksaan_neurologi_kekuatan_otot) AS neurologi, ');
+
+    vQ.SQL.Add('       CONCAT("Kulit : ", pk.pemeriksaan_integument_kulit, ');
+    vQ.SQL.Add('              " Warna Kulit : ", pk.pemeriksaan_integument_warnakulit, ');
+    vQ.SQL.Add('              " Turgor : ", pk.pemeriksaan_integument_turgor, ');
+    vQ.SQL.Add('              " Resiko Decubitus : ", pk.pemeriksaan_integument_dekubitas) AS integument, ');
+
+    vQ.SQL.Add('       CONCAT("Oedema : ", pk.pemeriksaan_muskuloskletal_oedema, ", ", pk.pemeriksaan_muskuloskletal_oedema_keterangan, ');
+    vQ.SQL.Add('              " Pergerakan Sendi : ", pk.pemeriksaan_muskuloskletal_pergerakan_sendi, ');
+    vQ.SQL.Add('              " Kekuatan Otot : ", pk.pemeriksaan_muskuloskletal_kekauatan_otot, ');
+    vQ.SQL.Add('              " Fraktur : ", pk.pemeriksaan_muskuloskletal_fraktur, ", ", pk.pemeriksaan_muskuloskletal_fraktur_keterangan, ');
+    vQ.SQL.Add('              " Nyeri Sendi : ", pk.pemeriksaan_muskuloskletal_nyeri_sendi, ", ", pk.pemeriksaan_muskuloskletal_nyeri_sendi_keterangan) AS muskuloskeletal, ');
+
+    // Pola Fungsi & Aktivitas
+    vQ.SQL.Add('       CONCAT("BAB : Frekuensi : ", pk.pemeriksaan_eliminasi_bab_frekuensi_jumlah, ');
+    vQ.SQL.Add('              " Konsistensi : ", pk.pemeriksaan_eliminasi_bab_konsistensi, ');
+    vQ.SQL.Add('              " Warna : ", pk.pemeriksaan_eliminasi_bab_warna, ');
+    vQ.SQL.Add('              " BAK : Frekuensi : ", pk.pemeriksaan_eliminasi_bak_frekuensi_jumlah, ');
+    vQ.SQL.Add('              " Warna : ", pk.pemeriksaan_eliminasi_bak_warna, ');
+    vQ.SQL.Add('              " Lain-lain : ", pk.pemeriksaan_eliminasi_bak_lainlain) AS eliminasi, ');
+
+    vQ.SQL.Add('       CONCAT("Mandi : ", pk.pola_aktifitas_mandi, " Makan/Minum : ", pk.pola_aktifitas_makanminum, ');
+    vQ.SQL.Add('              " Berpakaian : ", pk.pola_aktifitas_berpakaian, " Eliminasi : ", pk.pola_aktifitas_eliminasi, ');
+    vQ.SQL.Add('              " Berpindah : ", pk.pola_aktifitas_berpindah) AS pola_aktifitas, ');
+
+    vQ.SQL.Add('       CONCAT("Porsi Makan : ", pk.pola_nutrisi_porsi_makan, " porsi, ", ');
+    vQ.SQL.Add('              " Frekuensi Makan : ", pk.pola_nutrisi_frekuesi_makan, "x/hari, ", ');
+    vQ.SQL.Add('              " Jenis Makanan : ", pk.pola_nutrisi_jenis_makanan) AS pola_nutrisi, ');
+
+    vQ.SQL.Add('       CONCAT("Lama Tidur : ", pk.pola_tidur_lama_tidur, " jam/hari, Gangguan : ", pk.pola_tidur_gangguan) AS pola_tidur, ');
+
+    // Pengkajian Fungsi Fisik & Psiko
+    vQ.SQL.Add('       pk.pengkajian_fungsi_kemampuan_sehari AS kemampuan_sehari, pk.pengkajian_fungsi_berjalan, ');
+    vQ.SQL.Add('       pk.pengkajian_fungsi_aktifitas, pk.pengkajian_fungsi_ambulasi AS alat_ambulasi, ');
+    vQ.SQL.Add('       pk.pengkajian_fungsi_ekstrimitas_atas AS ekstrimitas_atas, pk.pengkajian_fungsi_ekstrimitas_bawah AS ekstrimitas_bawah, ');
+    vQ.SQL.Add('       pk.pengkajian_fungsi_menggenggam, pk.pengkajian_fungsi_koordinasi, pk.pengkajian_fungsi_kesimpulan AS kesimpulan_fungsi, ');
+    vQ.SQL.Add('       pk.riwayat_psiko_kondisi_psiko AS kondisi_psikologis, pk.riwayat_psiko_perilaku, ');
+    vQ.SQL.Add('       pk.riwayat_psiko_gangguan_jiwa AS gangguan_jiwa, pk.riwayat_psiko_hubungan_keluarga AS hubungan_keluarga, ');
+    vQ.SQL.Add('       pk.riwayat_psiko_tinggal AS tinggal_dengan, pk.riwayat_psiko_nilai_kepercayaan AS nilai_kepercayaan, ');
+
+    // Penilaian Risiko & Rencana
+    vQ.SQL.Add('       CONCAT("Tingkat Nyeri : ", pk.penilaian_nyeri, " Waktu/Durasi : ", pk.penilaian_nyeri_waktu, " Menit, ", ');
+    vQ.SQL.Add('              " Penyebab : ", pk.penilaian_nyeri_penyebab, ", ", pk.penilaian_nyeri_ket_penyebab, ", ", ');
+    vQ.SQL.Add('              " Kualitas : ", pk.penilaian_nyeri_kualitas, ", ", pk.penilaian_nyeri_ket_kualitas, ", ", ');
+    vQ.SQL.Add('              " Skala Nyeri : ", pk.penilaian_nyeri_skala, ", Lokasi : ", pk.penilaian_nyeri_lokasi, ", ", ');
+    vQ.SQL.Add('              " Menyebar : ", pk.penilaian_nyeri_menyebar, ", ", ');
+    vQ.SQL.Add('              " Nyeri hilang bila : ", pk.penilaian_nyeri_hilang, ", ", pk.penilaian_nyeri_ket_hilang, ", ", ');
+    vQ.SQL.Add('              " Diberitahukan pada dokter ? : ", pk.penilaian_nyeri_diberitahukan_dokter, ", Jam : ", pk.penilaian_nyeri_jam_diberitahukan_dokter) AS penilaian_nyeri, ');
+
+    vQ.SQL.Add('       CONCAT("Total Morse : ", pk.penilaian_jatuhmorse_totalnilai) AS morse_total, ');
+    vQ.SQL.Add('       CONCAT("Total Sydney : ", pk.penilaian_jatuhsydney_totalnilai) AS sydney_total, ');
+    vQ.SQL.Add('       CONCAT("Total Skor Gizi : ", pk.nilai_total_gizi) AS gizi_total, ');
+    vQ.SQL.Add('       pk.rencana AS rencana_keperawatan ');
+
+    vQ.SQL.Add('FROM penilaian_awal_keperawatan_ranap pk ');
+    vQ.SQL.Add('LEFT JOIN petugas p1 ON pk.nip1 = p1.nip ');
+    vQ.SQL.Add('LEFT JOIN petugas p2 ON pk.nip2 = p2.nip ');
+    vQ.SQL.Add('LEFT JOIN dokter d ON pk.kd_dokter = d.kd_dokter ');
+    vQ.SQL.Add('WHERE TRIM(pk.no_rawat) = :no_rawat LIMIT 1');
+
+    vQ.ParamByName('no_rawat').AsString := ANoRawat;
+    vQ.Open;
+
+    if not vQ.IsEmpty then
+    begin
+      Result.Add('has_data', True);
+      Result.Add('tanggal_pengkajian', vQ.FieldByName('tanggal_format').AsString);
+      Result.Add('anamnesis', vQ.FieldByName('anamnesis').AsString);
+      Result.Add('tiba_di_ruang_rawat', vQ.FieldByName('tiba_di_ruang_rawat').AsString);
+      Result.Add('cara_masuk', vQ.FieldByName('cara_masuk').AsString);
+      Result.Add('macam_kasus', vQ.FieldByName('macam_kasus').AsString);
+      Result.Add('pengkaji_1', Trim(vQ.FieldByName('pengkaji_1').AsString));
+      Result.Add('pengkaji_2', Trim(vQ.FieldByName('pengkaji_2').AsString));
+      Result.Add('dpjp', Trim(vQ.FieldByName('dpjp').AsString));
+
+      // Blok Riwayat Kesehatan & Kebiasaan
+      Result.Add('riwayat_penyakit_saat_ini', Trim(vQ.FieldByName('riwayat_penyakit_saat_ini').AsString));
+      Result.Add('riwayat_penyakit_dahulu', Trim(vQ.FieldByName('riwayat_penyakit_dahulu').AsString));
+      Result.Add('riwayat_penyakit_keluarga', Trim(vQ.FieldByName('riwayat_penyakit_keluarga').AsString));
+      Result.Add('riwayat_penggunaan_obat', Trim(vQ.FieldByName('riwayat_penggunaan_obat').AsString)); // <-- DIPERBAIKI DI SINI
+      Result.Add('riwayat_pembedahan', Trim(vQ.FieldByName('riwayat_pembedahan').AsString));
+      Result.Add('riwayat_dirawat_di_rs', Trim(vQ.FieldByName('riwayat_dirawat_di_rs').AsString));
+      Result.Add('alat_bantu', Trim(vQ.FieldByName('alat_bantu').AsString));
+      Result.Add('hamil', vQ.FieldByName('hamil').AsString);
+      Result.Add('keterangan_hamil', Trim(vQ.FieldByName('keterangan_hamil').AsString));
+      Result.Add('riwayat_transfusi', vQ.FieldByName('riwayat_transfusi').AsString);
+      Result.Add('riwayat_alergi', Trim(vQ.FieldByName('riwayat_alergi').AsString));
+      Result.Add('kebiasaan_hidup', Trim(vQ.FieldByName('kebiasaan').AsString));
+
+      // Blok Pemeriksaan Fisik Ter-Concatenate
+      Result.Add('tanda_vital', Trim(vQ.FieldByName('tanda_vital').AsString));
+      Result.Add('sistem_saraf_pusat', Trim(vQ.FieldByName('sistem_saraf').AsString));
+      Result.Add('kardiovaskuler', Trim(vQ.FieldByName('kardiovaskuler').AsString));
+      Result.Add('respirasi', Trim(vQ.FieldByName('respirasi').AsString));
+      Result.Add('gastrointestinal', Trim(vQ.FieldByName('gastrointestinal').AsString));
+      Result.Add('neurologi', Trim(vQ.FieldByName('neurologi').AsString));
+      Result.Add('integument', Trim(vQ.FieldByName('integument').AsString));
+      Result.Add('muskuloskeletal', Trim(vQ.FieldByName('muskuloskeletal').AsString));
+
+      // Blok Pola Fungsi & Eliminasi
+      Result.Add('eliminasi', Trim(vQ.FieldByName('eliminasi').AsString));
+      Result.Add('pola_aktivitas', Trim(vQ.FieldByName('pola_aktifitas').AsString));
+      Result.Add('pola_nutrisi', Trim(vQ.FieldByName('pola_nutrisi').AsString));
+      Result.Add('pola_tidur', Trim(vQ.FieldByName('pola_tidur').AsString));
+
+      // Blok Pengkajian Fungsional
+      Result.Add('kemampuan_sehari', vQ.FieldByName('kemampuan_sehari').AsString);
+      Result.Add('pengkajian_fungsi_berjalan', vQ.FieldByName('pengkajian_fungsi_berjalan').AsString);
+      Result.Add('pengkajian_fungsi_aktivitas', vQ.FieldByName('pengkajian_fungsi_aktifitas').AsString);
+      Result.Add('alat_ambulasi', vQ.FieldByName('alat_ambulasi').AsString);
+      Result.Add('ekstremitas_atas', vQ.FieldByName('ekstrimitas_atas').AsString);
+      Result.Add('ekstremitas_bawah', vQ.FieldByName('ekstrimitas_bawah').AsString);
+      Result.Add('pengkajian_fungsi_menggenggam', vQ.FieldByName('pengkajian_fungsi_menggenggam').AsString);
+      Result.Add('pengkajian_fungsi_koordinasi', vQ.FieldByName('pengkajian_fungsi_koordinasi').AsString);
+      Result.Add('kesimpulan_fungsi', Trim(vQ.FieldByName('kesimpulan_fungsi').AsString));
+
+      // Blok Riwayat Psikososial & Spiritual
+      Result.Add('kondisi_psikologis', vQ.FieldByName('kondisi_psikologis').AsString);
+      Result.Add('riwayat_psiko_perilaku', vQ.FieldByName('riwayat_psiko_perilaku').AsString);
+      Result.Add('gangguan_jiwa', vQ.FieldByName('gangguan_jiwa').AsString);
+      Result.Add('hubungan_keluarga', vQ.FieldByName('hubungan_keluarga').AsString);
+      Result.Add('tinggal_dengan', vQ.FieldByName('tinggal_dengan').AsString);
+      Result.Add('nilai_kepercayaan', Trim(vQ.FieldByName('nilai_kepercayaan').AsString));
+
+      // Blok Skrining Risiko & Rencana Tindakan
+      Result.Add('penilaian_nyeri', Trim(vQ.FieldByName('penilaian_nyeri').AsString));
+      Result.Add('morse_total_skor', Trim(vQ.FieldByName('morse_total').AsString));
+      Result.Add('sydney_total_skor', Trim(vQ.FieldByName('sydney_total').AsString));
+      Result.Add('gizi_total_skor', Trim(vQ.FieldByName('gizi_total').AsString));
+      Result.Add('rencana_keperawatan', Trim(vQ.FieldByName('rencana_keperawatan').AsString));
+    end
+    else
+    begin
+      Result.Add('has_data', False);
     end;
 
   finally
@@ -1208,11 +1521,21 @@ begin
 
     // SUNTIK DATA TRIASE IGD DI SINI
     JSONKunjungan.Add('triase_igd', AmbilDataTriaseIGD(uhandlerapi.gZConn, vCurrentNoRawat));
+	
     // SUNTIK DATA ASESMEN KEPERAWATAN IGD DI SINI
     JSONKunjungan.Add('asesmen_keperawatan_igd', AmbilAsesmenKeperawatanIGD(uhandlerapi.gZConn, vCurrentNoRawat));
 
     // SUNTIK DATA ASESMEN MEDIS IGD DOKTER DI SINI
     JSONKunjungan.Add('penilaian_medis_igd', AmbilPenilaianMedisIGD(uhandlerapi.gZConn, vCurrentNoRawat));
+
+    // SUNTIK DATA ASESMEN KEPERAWATAN RANAP DI SINI (TAMBAHKAN BARIS INI)
+    JSONKunjungan.Add('asesmen_keperawatan_ranap', AmbilAsesmenKeperawatanRanap(uhandlerapi.gZConn, vCurrentNoRawat));
+	
+	// SUNTIK DATA DIAGNOSA / ICD-10 DI SINI (TAMBAHKAN BARIS INI)
+    JSONKunjungan.Add('diagnosa_icd10', AmbilRiwayatDiagnosa(uhandlerapi.gZConn, vCurrentNoRawat));
+	  
+	// SUNTIK DATA PROSEDUR / ICD-9 CM DI SINI (TAMBAHKAN BARIS INI)
+    JSONKunjungan.Add('prosedur_icd9', AmbilRiwayatProsedur(uhandlerapi.gZConn, vCurrentNoRawat));
 	
 	 // SUNTIK DATA SOAP RAWAT JALAN & rawat inap DI SINI
     JSONKunjungan.Add('soap_rajal', AmbilSOAPRawatJalan(uhandlerapi.gZConn, vCurrentNoRawat));

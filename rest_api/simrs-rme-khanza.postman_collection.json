@@ -1,0 +1,344 @@
+{
+  "info": {
+    "_postman_id": "c9ed5720-613f-4201-9ac9-1b034cf982c6",
+    "name": "simrs-rme-khanza",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "11743619"
+  },
+  "item": [
+    {
+      "name": "publik",
+      "item": [
+        {
+          "name": "obat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/api/v1/publik/obat",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "publik",
+                "obat"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "obatGetByname",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/api/v1/publik/obat?nama=Thermometer Digital",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "publik",
+                "obat"
+              ],
+              "query": [
+                {
+                  "key": "nama",
+                  "value": "Thermometer Digital",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Data Master",
+      "item": []
+    },
+    {
+      "name": "login",
+      "item": [
+        {
+          "name": "login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// 1. Pastikan status response adalah HTTP 200 atau 201\r",
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "// 2. Ambil data JSON dari response server Brook\r",
+                  "var jsonData = pm.response.json();\r",
+                  "\r",
+                  "// 3. Jika login sukses, simpan token ke dalam Collection Variable\r",
+                  "if (jsonData.status === \"success\") {\r",
+                  "    // Menyimpan token ke variabel koleksi agar bisa dipakai folder lain\r",
+                  "    pm.collectionVariables.set(\"api_token\", jsonData.token);\r",
+                  "    \r",
+                  "    // Log info ke Postman Console untuk memastikan\r",
+                  "    console.log(\"Token berhasil disimpan otomatis: \" + jsonData.token);\r",
+                  "    \r",
+                  "    pm.test(\"Login Berhasil & Token Terbaca\", function () {\r",
+                  "        pm.expect(jsonData.token).to.not.be.undefined;\r",
+                  "        pm.expect(jsonData.pegawai.nama).to.not.be.null;\r",
+                  "    });\r",
+                  "} else {\r",
+                  "    pm.test(\"Login Gagal: \" + jsonData.message, function () {\r",
+                  "        pm.expect(jsonData.status).to.eql(\"success\");\r",
+                  "    });\r",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"HABSARI\",\r\n    \"password\": \"HABSARI123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/api/v1/login",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "login"
+              ]
+            },
+            "description": "### 🔑 Skenario Dokumentasi API Login SIMRS Khanza\n\nMekanisme autentikasi menggunakan pencocokan enkripsi database bawaan Khanza (`AES_DECRYPT`) melalui perantara modul `umod_auth` pada server console Brook.\n\n#### 🛠️ Spesifikasi Request:\n\n- **Method:** `POST`\n    \n- **URL:** `http://{{server_ip}}:{{server_port}}/api/v1/login`\n    \n- **Headers:** `Content-Type: application/json`\n    \n\n#### 🔄 Alur Kerja Sistem (Skenario):\n\n1. Klien mengirimkan `username` dan `password` mentah melalui JSON.\n    \n2. Server melakukan komparasi via database MySQL menggunakan _secret key_ (`nur` dan `windi`).\n    \n3. Jika data cocok, server membuat token session baru berbentuk string `SHA1` unik.\n    \n4. Token disimpan ke tabel custom pendamping user`_api_token`.\n    \n5. Server mengembalikan response data profil pegawai yang bersangkutan beserta tokennya.\n    \n\n#### 📦 Contoh Response Sukses (200 OK):\n\n\\`\\`\\`json  \n{  \n\"status\": \"success\",  \n\"token\": \"7c4a8d09ca3762af61e59520943dc26494f8941b\",  \n\"pegawai\": {  \n\"nik\": \"admin\",  \n\"nama\": \"ismail hasan\",  \n\"jk\": \"L\",  \n\"jabatan\": \"IT MANAGER\",  \n\"tempat_lahir\": \"Batu\",  \n\"tanggal_lahir\": \"1993-01-01\",  \n\"status_aktif\": \"AKTIF\",  \n\"no_ktp\": \"350xxxxxxxxxxxxx\"  \n}  \n}\n\n\\### 💡 Cara Menggunakan Variabel di Endpoint Lain  \nSetelah Anda menempelkan kode di atas pada folder login, untuk \\*endpoint\\* lain (misalnya data pasien atau tindakan yang butuh token), Anda tidak perlu mengetik tokennya secara manual lagi.\n\nCukup buka tab **Authorization** pada request tersebut, pilih tipe **Bearer Token**, dan ketik format ini di kolom token:  \n\\`\\`\\`text  \n{{api_token}}EndFragment"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "inacbg",
+      "item": [
+        {
+          "name": "list_pasien",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "a4b4fd076d8419b13ecdfd80de0d29b015328ddc",
+                "type": "text"
+              },
+              {
+                "key": "",
+                "value": "",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/inacbg/pasien?tgl_awal=2025-05-02&tgl_akhir=2025-05-02&carabayar=BPJS&search=",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inacbg",
+                "pasien"
+              ],
+              "query": [
+                {
+                  "key": "tgl_awal",
+                  "value": "2025-05-02",
+                  "description": "**Wajib** | Filter tanggal mulai pendaftaran."
+                },
+                {
+                  "key": "tgl_akhir",
+                  "value": "2025-05-02",
+                  "description": "**Wajib** | Filter tanggal batas pendaftaran."
+                },
+                {
+                  "key": "carabayar",
+                  "value": "BPJS",
+                  "description": "*Opsional* | Menyaring nama asuransi/penjamin. |"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "*Opsional* | Keyword pencarian multi-field (No RM, Nama, No Rawat)."
+                }
+              ]
+            },
+            "description": "### 🏥 Skenario Pencarian Data Pasien & Berkas INACBG/E-Klaim\n\nEndpoint terproteksi ini digunakan untuk menarik list kunjungan pasien secara detail guna kebutuhan integrasi aplikasi E-Klaim INACBG Kemkes.\n\n#### ⚙️ Spesifikasi Request:\n\n- **Method:** `GET`\n    \n- **URL:** `http://{{server_ip}}:{{server_port}}/api/v1/inacbg/pasien`\n    \n- **Headers:** `Authorization: Bearer {{api_token}}`\n    \n\n#### 🔍 Parameter Query String (URL Params):\n\n| Key | Value Contoh | Sifat | Deskripsi |\n| --- | --- | --- | --- |\n| `tgl_awal` | `2026-06-01` | **Wajib** | Filter tanggal mulai pendaftaran. |\n| `tgl_akhir` | `2026-06-25` | **Wajib** | Filter tanggal batas pendaftaran. |\n| `carabayar` | `BPJS` | _Opsional_ | Menyaring nama asuransi/penjamin. |\n| `search` | `000021` | _Opsional_ | Keyword pencarian multi-field (No RM, Nama, No Rawat). |\n\n#### 📦 Contoh Skema Response Sukses (200 OK):\n\n\\`\\`\\`json  \n\\[  \n{  \n\"no_reg\": \"002\",  \n\"no_rawat\": \"2026/06/25/000001\",  \n\"tgl_registrasi\": \"2026-06-25\",  \n\"jam_reg\": \"08:15:00\",  \n\"dokter\": \"dr. Ahmad Fauzi, Sp.PD\",  \n\"no_rm\": \"000021\",  \n\"nama_pasien\": \"SITI AMINAH\",  \n\"jk\": \"Perempuan\",  \n\"umur\": \"45\",  \n\"poliklinik\": \"Poli Penyakit Dalam\",  \n\"png_jawab\": \"BPJS KESEHATAN\",  \n\"status_bayar\": \"Belum Bayar\",  \n\"status_klaim\": \"Belum Dikirim\",  \n\"diagnosa_icd10\": \\[  \n\"E11.9\",  \n\"I10\"  \n\\],  \n\"prosedur_icd9\": \\[  \n{  \n\"kode_prosedur\": \"93.57\",  \n\"jumlah\": 1  \n}  \n\\]  \n}  \n\\]"
+          },
+          "response": []
+        },
+        {
+          "name": "detail_pasien",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "a4b4fd076d8419b13ecdfd80de0d29b015328ddc",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/inacbg/detail?no_rawat=2025/05/02/000354",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "inacbg",
+                "detail"
+              ],
+              "query": [
+                {
+                  "key": "no_rawat",
+                  "value": "2025/05/02/000354"
+                }
+              ]
+            },
+            "description": "Anda dapat menambahkan request baru di Postman dengan struktur parameter di bawah ini:\n\n- **Method:** `GET`\n    \n- **URL:** `http://{{server_ip}}:{{server_port}}/api/v1/inacbg/detail?no_rawat=2026/06/25/000001`\n    \n- **Headers:** `Authorization: Bearer {{api_token}}`\n    \n\n#### Contoh Struktur Response JSON Sukses (200 OK):\n\nJSON\n\n```\n{\n    \"status\": \"success\",\n    \"no_rawat\": \"2026/06/25/000001\",\n    \"no_reg\": \"004\",\n    \"no_rm\": \"000045\",\n    \"nama_pasien\": \"SULAIMAN\",\n    \"jk\": \"L\",\n    \"tgl_lahir\": \"1980-05-12\",\n    \"umur\": \"46 Th\",\n    \"status_lanjut\": \"Ranap\",\n    \"poliklinik\": \"Kamar Inap Kelas 2\",\n    \"png_jawab\": \"BPJS KESEHATAN\",\n    \"dpjp\": \"dr. Bambang Sp.B\",\n    \"no_sep\": \"0192R0020626V000012\",\n    \"diagnosa\": [\n        \"K35.8\",\n        \"A01.0\"\n    ],\n    \"prosedur\": [\n        \"47.01\"\n    ],\n    \"rincian_biaya_riil\": {\n        \"prosedur_non_bedah\": 150000.00,\n        \"prosedur_bedah\": 4500000.00,\n        \"konsultasi\": 200000.00,\n        \"keperawatan\": 350000.00,\n        \"kamar\": 1250000.00,\n        \"rawat_intensif\": 0.00,\n        \"obat\": 890000.00\n    }\n}\n\n ```"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "riwayatpx",
+      "item": [
+        {
+          "name": "riwayatByNoRMTanggal",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "c7a0068c474f9d4f03df5dd39587499ec12be6b3",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/riwayat?norm=217404&tgl_awal=2026-05-01&tgl_akhir=2025-05-30",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "riwayat"
+              ],
+              "query": [
+                {
+                  "key": "norm",
+                  "value": "217404"
+                },
+                {
+                  "key": "tgl_awal",
+                  "value": "2026-05-01"
+                },
+                {
+                  "key": "tgl_akhir",
+                  "value": "2025-05-30"
+                }
+              ]
+            },
+            "description": "Rekomendasi terbaik adalah membuat **Satu Router/Endpoint Utama** bernama `TRouteRiwayatPasien` dengan pola _Pattern_ `/api/v1/riwayat`.\n\nUntuk mengakomodasi kebutuhan pencarian Anda yang fleksibel (bisa pakai No. RM atau No. Rawat, ditambah filter tanggal), kita akan memanfaatkan **Query URL Parameters**.\n\nKlien cukup menembak ke satu endpoint dengan variasi parameter seperti ini:\n\n- **Opsi A (Berdasarkan No. RM + Rentang Tanggal):**`GET /api/v1/riwayat?norm=000021&tgl_awal=2026-06-01&tgl_akhir=2026-06-30`\n    \n-"
+          },
+          "response": []
+        },
+        {
+          "name": "riwayatByNoRawat",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "c7a0068c474f9d4f03df5dd39587499ec12be6b3",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/riwayat?no_rawat=2025/05/02/000354",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "riwayat"
+              ],
+              "query": [
+                {
+                  "key": "no_rawat",
+                  "value": "2025/05/02/000354"
+                }
+              ]
+            },
+            "description": "Rekomendasi terbaik adalah membuat **Satu Router/Endpoint Utama** bernama `TRouteRiwayatPasien` dengan pola _Pattern_ `/api/v1/riwayat`.\n\nUntuk mengakomodasi kebutuhan pencarian Anda yang fleksibel (bisa pakai No. RM atau No. Rawat, ditambah filter tanggal), kita akan memanfaatkan **Query URL Parameters**.\n\nKlien cukup menembak ke satu endpoint dengan variasi parameter seperti ini:\n\n- **Opsi B (Berdasarkan No. Rawat Spesifik):**`GET /api/v1/riwayat?no_rawat=2026/06/30/000001`"
+          },
+          "response": []
+        },
+        {
+          "name": "riwayatByNoRM limit 10",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "c7a0068c474f9d4f03df5dd39587499ec12be6b3",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{url}}/api/v1/riwayat?norm=00006316",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "riwayat"
+              ],
+              "query": [
+                {
+                  "key": "norm",
+                  "value": "00006316"
+                }
+              ]
+            },
+            "description": "Rekomendasi terbaik adalah membuat **Satu Router/Endpoint Utama** bernama `TRouteRiwayatPasien` dengan pola _Pattern_ `/api/v1/riwayat`.\n\nUntuk mengakomodasi kebutuhan pencarian Anda yang fleksibel (bisa pakai No. RM atau No. Rawat, ditambah filter tanggal), kita akan memanfaatkan **Query URL Parameters**.\n\nKlien cukup menembak ke satu endpoint dengan variasi parameter seperti ini:\n\n- StartFragmentSekarang endpoint `/api/v1/riwayat` ini sangat fleksibel untuk kebutuhan frontend/mobile apps Anda:EndFragment\n    \n    1. **Cari Berdasarkan No RM (Menampilkan maks 10 riwayat terbaru):**`GET http://localhost:8080/api/v1/riwayat?norm=000021`\n        \n    2. **Cari Berdasarkan No RM + Filter Tanggal Registrasi:**`GET http://localhost:8080/api/v1/riwayat?norm=000021&tgl_awal=2026-06-01&tgl_akhir=2026-06-30`\n        \n    3. **Cari Spesifik Berdasarkan No Rawat:**`GET http://localhost:8080/api/v1/riwayat?no_rawat=2026/06/30/000001`"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "api_token",
+      "value": ""
+    }
+  ]
+}

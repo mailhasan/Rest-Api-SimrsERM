@@ -73,6 +73,81 @@ var
   vQueryUser: TZQuery;
 begin
   Result := False;
+
+  // =================================================================
+  // KODINGAN SATPAM DISIPLIN TINGGI (ANTI GARBAGE BUFFER / SERVER GONE AWAY)
+  // =================================================================
+  {try
+    // Cek fisik koneksi dengan Ping
+    if (not gZConn.Connected) or (not gZConn.Ping) then
+    begin
+      Writeln('-> [WARNING] Koneksi mati/stale terdeteksi. Melakukan Hard Reset Pool...');
+
+      gZConn.Disconnect;
+      // Memaksa driver Zeos mengosongkan semua buffer koneksi lama di memori
+      gZConn.Properties.Values['pooled'] := 'false';
+      gZConn.Properties.Values['pooled'] := 'true';
+
+      gZConn.Connect;
+      Writeln('-> [SUKSES] Pool database disegarkan total.');
+    end;
+  except
+    on E: Exception do
+    begin
+      Writeln('-> [CRITICAL] Database lumpuh total: ' + E.Message);
+      AResponse.Send('{"status": "error", "message": "Database server tidak merespon"}//', 'application/json', 500);
+      {Exit;
+    end;
+  end;}
+
+  vRetryCount := 0;
+  while (vRetryCount < 3) do
+  begin
+    try
+      // Jika terdeteksi tidak konek, atau gagal tes Ping fisik ke MariaDB
+      if (not gZConn.Connected) or (not gZConn.Ping) then
+      begin
+        Writeln('-> [WARNING] Jalur database tidak aktif. Membuka ulang paksa...');
+
+        // Putus total dan bersihkan cache pool internal Zeos di memori
+        gZConn.Disconnect;
+        gZConn.Properties.Values['pooled'] := 'false';
+        gZConn.Properties.Values['pooled'] := 'true';
+
+        // Paksa buka kembali
+        gZConn.Connect;
+
+        if gZConn.Connected then
+        begin
+          Writeln('-> [SUKSES] Koneksi pulih kembali dari kondisi mati.');
+          Break; // Keluar dari loop re-try karena sudah sukses terbuka
+        end;
+      end
+      else
+      begin
+        // Jika koneksi sehat dan lolos Ping, langsung amankan jalur keluar loop
+        Break;
+      end;
+    except
+      on E: Exception do
+      begin
+        Inc(vRetryCount);
+        Writeln('-> [RETRY ' + IntToStr(vRetryCount) + '] Gagal memulihkan database: ' + E.Message);
+        Sleep(500); // Beri jeda setengah detik sebelum mencoba mengetuk pintu MySQL lagi
+      end;
+    end;
+  end;
+
+  // Proteksi Final jika setelah 3x percobaan database masih emoh terbuka
+  if (not gZConn.Connected) then
+  begin
+    Writeln('-> [CRITICAL] Koneksi database lumpuh total setelah 3x re-try.');
+    AResponse.Send('{"status": "error", "message": "Database server menolak koneksi (Not Opened Yet)"}', 'application/json', 500);
+    Exit;
+  end;
+
+  // =================================================================
+
   vToken := ARequest.Headers.Values['Authorization'];
 
   if vToken = '' then
