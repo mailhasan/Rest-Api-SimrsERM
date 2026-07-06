@@ -8,7 +8,7 @@ uses
   {$ENDIF}
   SysUtils, Classes, CustApp,IniFiles,
   ZConnection, BrookHTTPServer, BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse,
-  uhandlerapi, umod_getObatTanpaAuth, umod_auth, umod_riwayat;
+  uhandlerapi, umod_getObatTanpaAuth, umod_auth, umod_riwayat, umod_master_penyakit;
 
 type
   { TConsoleRouter }

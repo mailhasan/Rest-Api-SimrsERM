@@ -15,7 +15,9 @@ uses
   //umod_pasien; // <-- Jika membuat umod_dokter, umod_ranap, dst, tambahkan di sini separated by comma
   umod_getObatTanpaAuth,
   umod_inacbg,
-  umod_riwayat;
+  umod_riwayat,
+  umod_diagnosa,
+  umod_master_penyakit;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
 
@@ -61,7 +63,10 @@ begin
   TRouteInacbgDetailPasien.Create(ARoutesCollection);
 
   ///riwayat
-  TRouteRiwayatPasien.Create(ARoutesCollection)
+  TRouteRiwayatPasien.Create(ARoutesCollection);
+  // TAMBAHKAN BARIS MODUL DIAGNOSA CRUD DI SINI
+  TRouteDiagnosaCRUD.Create(ARoutesCollection);
+
 end;
 
 // =================================================================
@@ -71,6 +76,7 @@ function IsAuthenticatedtoken(ARequest: TBrookHTTPRequest; AResponse: TBrookHTTP
 var
   vToken: string;
   vQueryUser: TZQuery;
+  vRetryCount: Integer;
 begin
   Result := False;
 

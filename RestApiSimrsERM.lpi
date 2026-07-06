@@ -26,6 +26,9 @@
     </RunParams>
     <RequiredPackages>
       <Item>
+        <PackageName Value="LCL"/>
+      </Item>
+      <Item>
         <PackageName Value="BrookTardigrade"/>
       </Item>
       <Item>
@@ -56,6 +59,14 @@
       </Unit>
       <Unit>
         <Filename Value="umod_riwayat.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_diagnosa.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_master_penyakit.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
