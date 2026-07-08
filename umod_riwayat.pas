@@ -1764,7 +1764,7 @@ var
   JSONArrayKunjungan: TJSONArray;
   vCurrentNoRawat: string;
 begin
-  if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
+  //if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
 
   // Tangkap parameter filter dari query string URL
   vNoRM     := Trim(ARequest.Params.Values['norm']);
