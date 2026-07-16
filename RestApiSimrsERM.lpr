@@ -6,9 +6,11 @@ uses
   {$IFDEF UNIX}
   cthreads,
   {$ENDIF}
-  SysUtils, Classes, CustApp, IniFiles,
-  ZConnection, BrookHTTPServer, BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse,
-  uhandlerapi, umod_getObatTanpaAuth, umod_auth, umod_riwayat, umod_master_penyakit;
+  SysUtils, Classes, CustApp, IniFiles, ZConnection, BrookHTTPServer,
+  BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse, uhandlerapi,
+  umod_getObatTanpaAuth, umod_auth, umod_riwayat, umod_master_penyakit,
+  umod_ranap_pasien, umod_ranap_soape, umod_ranap_penilaian_medis, uhelper,
+  umod_ranap_copyresep;
 
 type
   { TConsoleRouter }

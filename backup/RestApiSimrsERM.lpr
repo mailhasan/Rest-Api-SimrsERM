@@ -6,9 +6,11 @@ uses
   {$IFDEF UNIX}
   cthreads,
   {$ENDIF}
-  SysUtils, Classes, CustApp, IniFiles,
-  ZConnection, BrookHTTPServer, BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse,
-  uhandlerapi, umod_getObatTanpaAuth, umod_auth, umod_riwayat, umod_master_penyakit;
+  SysUtils, Classes, CustApp, IniFiles, ZConnection, BrookHTTPServer,
+  BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse, uhandlerapi,
+  umod_getObatTanpaAuth, umod_auth, umod_riwayat, umod_master_penyakit,
+  umod_ranap_pasien, umod_ranap_soape, umod_ranap_penilaian_medis, uhelper,
+  Unit1;
 
 type
   { TConsoleRouter }
@@ -139,7 +141,7 @@ var
   vConfigFile: string;
   vLastPingTick: QWord; // Untuk tracking waktu ping tanpa memblokir thread
 begin
-  vPort := StrToIntDef(GetOptionValue('p', 'port'), 888);
+  vPort := StrToIntDef(GetOptionValue('p', 'port'), 8888);
 
   gLogFile := Concat(ExtractFilePath(ParamStr(0)), 'server.log');
 

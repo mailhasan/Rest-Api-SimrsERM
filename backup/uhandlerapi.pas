@@ -6,7 +6,7 @@ interface
 
 uses
   SysUtils, Classes, ZDataset, ZConnection, BrookURLRouter,
-  BrookHTTPRequest, BrookHTTPResponse, BrookUtility, zstream,
+  BrookHTTPRequest, BrookHTTPResponse, BrookUtility, zstream,uhelper,
 
   // =================================================================
   // [DAFTAR MODUL]: TAMBAHKAN UNIT MODUL BARU ANDA DI BAWAH INI
@@ -17,7 +17,11 @@ uses
   umod_inacbg,
   umod_riwayat,
   umod_diagnosa,
-  umod_master_penyakit;
+  umod_master_penyakit,
+  umod_ranap_pasien,
+  umod_ranap_soape,
+  umod_ranap_penilaian_medis
+  ;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
 
@@ -66,7 +70,16 @@ begin
   TRouteRiwayatPasien.Create(ARoutesCollection);
   // TAMBAHKAN BARIS MODUL DIAGNOSA CRUD DI SINI
   TRouteDiagnosaCRUD.Create(ARoutesCollection);
-
+  // SUNTIKKAN BERKAS MASTER PENYAKIT BARU DI SINI
+  TRouteMasterPenyakitCRUD.Create(ARoutesCollection);
+  // SUNTIKKAN RUTE PENCARIAN RANAP PASIEN BARU DI SINI
+  TRouteRanapPasienSearch.Create(ARoutesCollection);
+  // SUNTIKKAN MODUL BARU CRUD SOAPE RANAP DI SINI
+  TRouteRanapSOAPECRUD.Create(ARoutesCollection);
+  // DAFTARKAN INSTANCE BARU PENILAIAN MEDIS DI SINI
+  TRouteRanapPenilaianMedisCRUD.Create(ARoutesCollection);
+  // REGISTER ENDPOINT RIWAYAT / COPY RESEP
+  TRouteRanapCopyResepCRUD.Create(ARoutesCollection);
 end;
 
 // =================================================================
