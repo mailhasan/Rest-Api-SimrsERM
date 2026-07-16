@@ -169,7 +169,7 @@ begin
     end
 
     // =================================================================
-    // 3. OPERATION: PUT (UPDATE DATA MASTER PENYAKIT)
+    // 3. OPERATION: PUT (UPDATE DATA MASTER PENYAKIT) - DENGAN VALIDASI FK
     // =================================================================
     else if ARequest.Method = 'PUT' then
     begin
@@ -204,7 +204,13 @@ begin
 
         AResponse.Send('{"status": "success", "message": "Master penyakit berhasil diperbarui"}', 'application/json', 200);
       except
-        on E: Exception do AResponse.SendFmt('{"status": "error", "message": "%s"}', [E.Message], 'application/json', 500);
+        on E: Exception do
+        begin
+          if Pos('foreign key constraint fails', LowerCase(E.Message)) > 0 then
+            AResponse.Send('{"status": "error", "message": "Gagal Update: Kode Kategori (kd_ktg) tidak terdaftar di master kategori_penyakit!"}', 'application/json', 400)
+          else
+            AResponse.SendFmt('{"status": "error", "message": "%s"}', [E.Message], 'application/json', 500);
+        end;
       end;
       if Assigned(vJSONData) then vJSONData.Free;
     end

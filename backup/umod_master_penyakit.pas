@@ -26,7 +26,7 @@ procedure TRouteMasterPenyakitCRUD.AfterConstruction;
 begin
   inherited AfterConstruction;
   Methods := [rmGET, rmPOST, rmPUT, rmDELETE];
-  Pattern := '/penyakit'; // Endpoint URL: /api/penyakit
+  Pattern := 'api/v1/penyakit'; // Endpoint URL: /api/penyakit
 end;
 
 procedure TRouteMasterPenyakitCRUD.DoRequest(ASender: TObject; ARoute: TBrookURLRoute; ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse);

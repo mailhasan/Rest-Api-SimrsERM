@@ -50,7 +50,7 @@ var
   vJSONMentah, vJSONKompres: string;
 begin
   // Wajib Amankan Modul Klaim dengan Token Authentication
-  //if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
+  if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
 
   // 1. Tangkap parameter filter query string dari URL (?tgl_awal=...&tgl_akhir=...&carabayar=...&search=...)
   vTglAwal   := Trim(ARequest.Params.Values['tgl_awal']);
@@ -255,8 +255,8 @@ procedure TRouteInacbgDetailPasien.DoRequest(ASender: TObject; ARoute: TBrookURL
 var
   vNoRawat, vSttsLanjut, vNoSEP, vJSONMentah, vJSONKompres: string;
   vQMain, vQSub: TZQuery;
-  JSONRes, JSONBiaya: TJSONObject;
-  JSONDiagnosa, JSONProsedur: TJSONArray;
+  JSONRes, JSONBiaya, JSONItemAkomodasi: TJSONObject;
+  JSONDiagnosa, JSONProsedur,JSONAkomodasi: TJSONArray;
   vBiayaReg, vProsedurNonBedah, vProsedurBedah, vKonsultasi: Double;
   vKeperawatan, vKamar, vKamarIntensif, vObat: Double;
 begin
@@ -287,7 +287,7 @@ begin
     vQMain.SQL.Add('       reg_periksa.kd_dokter, dokter.nm_dokter, reg_periksa.no_rkm_medis, pasien.nm_pasien, ');
     vQMain.SQL.Add('       pasien.jk, pasien.umur, pasien.tgl_lahir, poliklinik.nm_poli, reg_periksa.status_lanjut, ');
     vQMain.SQL.Add('       reg_periksa.umurdaftar, reg_periksa.sttsumur, reg_periksa.p_jawab, reg_periksa.almt_pj, ');
-    vQMain.SQL.Add('       reg_periksa.hubunganpj, reg_periksa.biaya_reg, reg_periksa.stts_daftar, penjab.png_jawab ');
+    vQMain.SQL.Add('       reg_periksa.hubunganpj, reg_periksa.biaya_reg, reg_periksa.stts_daftar, penjab.png_jawab, pasien.no_peserta ');
     vQMain.SQL.Add('FROM reg_periksa ');
     vQMain.SQL.Add('INNER JOIN dokter ON reg_periksa.kd_dokter = dokter.kd_dokter ');
     vQMain.SQL.Add('INNER JOIN pasien ON reg_periksa.no_rkm_medis = pasien.no_rkm_medis ');
@@ -318,6 +318,7 @@ begin
     JSONRes.Add('status_lanjut', vSttsLanjut);
     JSONRes.Add('poliklinik', vQMain.FieldByName('nm_poli').AsString);
     JSONRes.Add('png_jawab', vQMain.FieldByName('png_jawab').AsString);
+    JSONRes.Add('no_peserta', vQMain.FieldByName('no_peserta').AsString);
 
     // 3.2. Query DPJP (Khusus Rawat Inap)
     vQSub.SQL.Text := 'SELECT dokter.nm_dokter FROM dpjp_ranap INNER JOIN dokter ON dpjp_ranap.kd_dokter = dokter.kd_dokter WHERE dpjp_ranap.no_rawat = :norawat LIMIT 1';
@@ -328,6 +329,48 @@ begin
     else
       JSONRes.Add('dpjp', vQMain.FieldByName('nm_dokter').AsString); // Fallback ke dokter poli utama
     vQSub.Close;
+
+    // =================================================================
+    // TAMBAHAN: RINCIAN AKOMODASI KAMAR INAP (TANGGAL MASUK, KELUAR & LAMA)
+    // =================================================================
+    JSONAkomodasi := TJSONArray.Create;
+    if vSttsLanjut = 'Ranap' then
+    begin
+      vQSub.SQL.Clear;
+      vQSub.SQL.Add('SELECT kd_kamar, tgl_masuk, jam_masuk, tgl_keluar, jam_keluar, lama, stts_pulang ');
+      vQSub.SQL.Add('FROM kamar_inap WHERE no_rawat = :norawat ');
+      vQSub.SQL.Add('ORDER BY tgl_masuk ASC, jam_masuk ASC');
+      vQSub.ParamByName('norawat').AsString := vNoRawat;
+      vQSub.Open;
+
+      while not vQSub.EOF do
+      begin
+        JSONItemAkomodasi := TJSONObject.Create;
+        JSONItemAkomodasi.Add('kd_kamar', Trim(vQSub.FieldByName('kd_kamar').AsString));
+        JSONItemAkomodasi.Add('tgl_masuk', vQSub.FieldByName('tgl_masuk').AsString);
+        JSONItemAkomodasi.Add('jam_masuk', vQSub.FieldByName('jam_masuk').AsString);
+        
+        // Handle kondisi jika pasien masih aktif dirawat (tgl_keluar masih null di DB)
+        if vQSub.FieldByName('tgl_keluar').IsNull then
+          JSONItemAkomodasi.Add('tgl_keluar', '-')
+        else
+          JSONItemAkomodasi.Add('tgl_keluar', vQSub.FieldByName('tgl_keluar').AsString);
+
+        if vQSub.FieldByName('jam_keluar').IsNull then
+          JSONItemAkomodasi.Add('jam_keluar', '-')
+        else
+          JSONItemAkomodasi.Add('jam_keluar', vQSub.FieldByName('jam_keluar').AsString);
+
+        JSONItemAkomodasi.Add('lama_inap', vQSub.FieldByName('lama').AsInteger);
+        JSONItemAkomodasi.Add('status_pulang', vQSub.FieldByName('stts_pulang').AsString);
+        
+        JSONAkomodasi.Add(JSONItemAkomodasi);
+        vQSub.Next;
+      end;
+      vQSub.Close;
+    end;
+    JSONRes.Add('akomodasi_kamar', JSONAkomodasi);
+    // =================================================================
 
     // 3.3. Logika Pencarian No SEP Kompleks (Ralan vs Ranap)
     vNoSEP := '';

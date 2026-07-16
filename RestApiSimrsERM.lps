@@ -8,8 +8,8 @@
       <Unit>
         <Filename Value="RestApiSimrsERM.lpr"/>
         <IsPartOfProject Value="True"/>
-        <TopLine Value="118"/>
-        <CursorPos X="43" Y="156"/>
+        <TopLine Value="103"/>
+        <CursorPos X="57" Y="142"/>
         <UsageCount Value="298"/>
         <Loaded Value="True"/>
       </Unit>
@@ -17,8 +17,8 @@
         <Filename Value="uhandlerapi.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="40"/>
-        <CursorPos X="67" Y="60"/>
+        <TopLine Value="34"/>
+        <CursorPos X="57" Y="53"/>
         <UsageCount Value="298"/>
         <Loaded Value="True"/>
       </Unit>
@@ -27,8 +27,7 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="umod_getObatTanpaAuth"/>
         <EditorIndex Value="5"/>
-        <TopLine Value="81"/>
-        <CursorPos X="99" Y="112"/>
+        <CursorPos X="30" Y="72"/>
         <UsageCount Value="298"/>
         <Loaded Value="True"/>
       </Unit>
@@ -43,19 +42,19 @@
       <Unit>
         <Filename Value="umod_inacbg.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="8"/>
-        <TopLine Value="17"/>
-        <CursorPos X="22" Y="232"/>
+        <TopLine Value="369"/>
+        <CursorPos X="58" Y="389"/>
         <UsageCount Value="298"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="umod_riwayat.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="9"/>
-        <TopLine Value="1748"/>
-        <CursorPos X="5" Y="1767"/>
+        <TopLine Value="1752"/>
+        <CursorPos X="57" Y="1918"/>
         <UsageCount Value="227"/>
         <Loaded Value="True"/>
       </Unit>
@@ -63,24 +62,25 @@
         <Filename Value="umod_diagnosa.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="3"/>
-        <CursorPos X="21" Y="31"/>
-        <UsageCount Value="29"/>
+        <TopLine Value="227"/>
+        <CursorPos X="69" Y="67"/>
+        <UsageCount Value="90"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="umod_master_penyakit.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="4"/>
-        <TopLine Value="212"/>
-        <CursorPos X="91" Y="241"/>
-        <UsageCount Value="26"/>
+        <TopLine Value="215"/>
+        <CursorPos X="64" Y="246"/>
+        <UsageCount Value="87"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="C:\fpcupdeluxe\ccr\zeos\src\dbc\ZDbcMySql.pas"/>
         <EditorIndex Value="11"/>
         <TopLine Value="1252"/>
-        <CursorPos X="101" Y="1281"/>
+        <CursorPos X="87" Y="1280"/>
         <UsageCount Value="149"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
@@ -98,7 +98,7 @@
         <EditorIndex Value="10"/>
         <TopLine Value="1518"/>
         <CursorPos X="83" Y="1549"/>
-        <UsageCount Value="90"/>
+        <UsageCount Value="120"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -106,124 +106,12 @@
         <EditorIndex Value="2"/>
         <TopLine Value="1093"/>
         <CursorPos X="58" Y="1121"/>
-        <UsageCount Value="13"/>
+        <UsageCount Value="44"/>
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="29">
-      <Position>
-        <Filename Value="umod_riwayat.pas"/>
-        <Caret Line="1211" Column="33" TopLine="1185"/>
-      </Position>
-      <Position>
-        <Filename Value="C:\fpcupdeluxe\ccr\zeos\src\dbc\ZDbcMySql.pas"/>
-        <Caret Line="1356" Column="78" TopLine="1323"/>
-      </Position>
-      <Position>
-        <Filename Value="uhandlerapi.pas"/>
-        <Caret Line="102" Column="3" TopLine="76"/>
-      </Position>
-      <Position>
-        <Filename Value="uhandlerapi.pas"/>
-        <Caret Line="147" Column="7" TopLine="119"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_inacbg.pas"/>
-        <Caret Line="20" Column="70"/>
-      </Position>
-      <Position>
-        <Filename Value="RestApiSimrsERM.lpr"/>
-        <Caret Line="153" Column="28" TopLine="149"/>
-      </Position>
-      <Position>
-        <Filename Value="uhandlerapi.pas"/>
-        <Caret Line="35" Column="64"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="238" Column="5" TopLine="201"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="216" Column="62" TopLine="201"/>
-      </Position>
-      <Position>
-        <Filename Value="uhandlerapi.pas"/>
-        <Caret Line="66" Column="49" TopLine="41"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="8" Column="83"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="26" Column="18"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="8" Column="70"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="9" Column="72"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="32" Column="90" TopLine="10"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="34" Column="68"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="231" Column="5" TopLine="192"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="8" Column="129"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="24" Column="18"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="16" Column="41"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="223" Column="5" TopLine="184"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="9" Column="71"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="24" Column="18"/>
-      </Position>
-      <Position>
-        <Filename Value="uhandlerapi.pas"/>
-        <Caret Line="67" Column="21" TopLine="48"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="144" Column="13" TopLine="119"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="156" Column="15" TopLine="121"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="194" Column="8" TopLine="156"/>
-      </Position>
-      <Position>
-        <Filename Value="umod_diagnosa.pas"/>
-        <Caret Line="122" Column="9" TopLine="104"/>
-      </Position>
       <Position>
         <Filename Value="uhandlerapi.pas"/>
         <Caret Line="20" Column="23" TopLine="14"/>
@@ -232,10 +120,133 @@
         <Filename Value="uhandlerapi.pas"/>
         <Caret Line="60" Column="67" TopLine="40"/>
       </Position>
+      <Position>
+        <Filename Value="umod_riwayat.pas"/>
+        <Caret Line="1564" Column="129" TopLine="1543"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_riwayat.pas"/>
+        <Caret Line="1918" Column="57" TopLine="1906"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_getobattanpaauth.pas"/>
+        <Caret Line="18" Column="105"/>
+      </Position>
+      <Position>
+        <Filename Value="uhandlerapi.pas"/>
+        <Caret Line="50" Column="31" TopLine="40"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="156" Column="36" TopLine="145"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="170" Column="54" TopLine="149"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="28" Column="30" TopLine="19"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="46" TopLine="42"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="50" Column="27" TopLine="30"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="67" Column="20" TopLine="48"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="9" Column="38"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="228" Column="88" TopLine="197"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="175" Column="79" TopLine="150"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="187" Column="83" TopLine="162"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="269" Column="5" TopLine="230"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="28" Column="84"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="269" Column="5" TopLine="230"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="28" Column="7" TopLine="8"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="29" Column="48" TopLine="14"/>
+      </Position>
+      <Position>
+        <Filename Value="RestApiSimrsERM.lpr"/>
+        <Caret Line="194" Column="87" TopLine="168"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="66" Column="85" TopLine="38"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="456" Column="78" TopLine="420"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="453" Column="87" TopLine="420"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="685" Column="59" TopLine="659"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="658" Column="97" TopLine="638"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="673" Column="109" TopLine="659"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="302" Column="58" TopLine="282"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="22" Column="57"/>
+      </Position>
     </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes ActiveMode=""/>
     </RunParams>
   </ProjectSession>
+  <Debugging>
+    <BreakPoints>
+      <Item>
+        <Kind Value="bpkSource"/>
+        <WatchScope Value="wpsLocal"/>
+        <WatchKind Value="wpkWrite"/>
+        <Source Value="RestApiSimrsERM.lpr"/>
+        <Line Value="40"/>
+      </Item>
+    </BreakPoints>
+  </Debugging>
 </CONFIG>

@@ -6,9 +6,9 @@ uses
   {$IFDEF UNIX}
   cthreads,
   {$ENDIF}
-  SysUtils, Classes, CustApp,IniFiles,
+  SysUtils, Classes, CustApp, IniFiles,
   ZConnection, BrookHTTPServer, BrookURLRouter, BrookHTTPRequest, BrookHTTPResponse,
-  uhandlerapi, umod_getObatTanpaAuth, umod_auth, umod_riwayat;
+  uhandlerapi, umod_getObatTanpaAuth, umod_auth, umod_riwayat, umod_master_penyakit;
 
 type
   { TConsoleRouter }
@@ -24,6 +24,7 @@ type
   private
     FRouter: TConsoleRouter;
   protected
+    // PERBAIKAN: Pastikan ARequest tidak ganda
     procedure DoRequest(ASender: TObject; ARequest: TBrookHTTPRequest;
       AResponse: TBrookHTTPResponse); override;
   public
@@ -37,14 +38,70 @@ type
     procedure DoRun; override;
   end;
 
+  // --- KELAS HELPER UNTUK EVENT HANDLER NON-FORM ---
+  { TZeosKeepAliveBridge }
+  TZeosKeepAliveBridge = class
+  public
+    procedure HandleConnectionLost(Sender: TObject);
+  end;
+
 var
   gZConnectiondb: TZConnection;
   gIPTracker: TStringList;
+  gLogFile: string; // Menyimpan path file log
+  gZeosBridge: TZeosKeepAliveBridge; // Bridge objek untuk menangani event ZConnection
+
+// --- PROSEDUR LOGGING YANG SUDAH DIPERBAIKI ---
+procedure LogWrite(const AMsg: string);
+var
+  vLogText: string;
+  vFileStream: TFileStream;
+begin
+  // Format log: [YYYY-MM-DD HH:NN:SS] Pesan Log + Baris Baru (CRLF)
+  vLogText := FormatDateTime('[yyyy-mm-dd hh:nn:ss] ', Now) + AMsg + sLineBreak;
+
+  // 1. Tampilkan di layar terminal/konsol
+  Write(FormatDateTime('[yyyy-mm-dd hh:nn:ss] ', Now) + AMsg + LineEnding);
+
+  // 2. Simpan atau Append ke dalam file teks
+  try
+    if not FileExists(gLogFile) then
+      vFileStream := TFileStream.Create(gLogFile, fmCreate)
+    else
+      vFileStream := TFileStream.Create(gLogFile, fmOpenWrite or fmShareDenyNone);
+
+    try
+      vFileStream.Seek(0, soEnd); // Pindahkan kursor ke baris paling akhir (Append)
+
+      if Length(vLogText) > 0 then
+        vFileStream.WriteBuffer(vLogText[1], Length(vLogText));
+    finally
+      vFileStream.Free;
+    end;
+  except
+    Writeln('-> [CRITICAL ERROR] Gagal menulis ke file log!');
+  end;
+end;
+
+{ TZeosKeepAliveBridge }
+procedure TZeosKeepAliveBridge.HandleConnectionLost(Sender: TObject);
+begin
+  LogWrite('-> [WARNING] Koneksi database terputus sepihak! Mencoba menyambung kembali...');
+  try
+    // Memaksa koneksi pool melakukan reconnect global
+    TZConnection(Sender).Reconnect;
+    LogWrite('-> [RECOVERY] Reconnect database BERHASIL.');
+  except
+    on E: Exception do
+      LogWrite('-> [CRITICAL] Reconnect GAGAL: ' + E.Message);
+  end;
+end;
 
 { TConsoleRouter }
 procedure TConsoleRouter.DoNotFound(ASender: TObject; const ARoute: string;
   ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse);
 begin
+  LogWrite('-> [404 NOT FOUND] IP: ' + ARequest.IP + ' mencoba akses rute: ' + ARoute);
   AResponse.Send('{"status": "error", "message": "Endpoint not found!"}', 'application/json', 404);
 end;
 
@@ -69,7 +126,7 @@ end;
 procedure TConsoleServer.DoRequest(ASender: TObject; ARequest: TBrookHTTPRequest;
   AResponse: TBrookHTTPResponse);
 begin
-  // Meneruskan request jaringan secara aman ke engine router
+  LogWrite(Format('-> [REQUEST] %s %s dari IP: %s', [ARequest.Method, ARequest.Path, ARequest.IP]));
   FRouter.Route(ASender, ARequest, AResponse);
 end;
 
@@ -80,37 +137,30 @@ var
   vServer: TConsoleServer;
   vIni: TIniFile;
   vConfigFile: string;
+  vLastPingTick: QWord; // Untuk tracking waktu ping tanpa memblokir thread
 begin
-  vPort := StrToIntDef(GetOptionValue('p', 'port'), 8888);
+  vPort := StrToIntDef(GetOptionValue('p', 'port'), 888);
+
+  gLogFile := Concat(ExtractFilePath(ParamStr(0)), 'server.log');
 
   Writeln('=====================================================');
-  Writeln('   REST API SIMRS ERM KHANZA - BROOK REST API CONSOLE SERVER       ');
+  Writeln('    REST API SIMRS ERM KHANZA - BROOK REST API CONSOLE SERVER       ');
   Writeln('=====================================================');
   Writeln('Menginisialisasi sistem...');
 
   gIPTracker := TStringList.Create;
   gIPTracker.Sorted := False;
 
-  // setting langsung pada coding
-  {gZConnectiondb := TZConnection.Create(nil);
-  gZConnectiondb.Protocol := 'mysql'; // atau 'mysql' sesuai server Khanza Anda
-  gZConnectiondb.HostName := '192.168.200.201'; // IP Server Database SIMRS Khanza
-  gZConnectiondb.Port     := 3306;
-  gZConnectiondb.User     := 'simrs';      // Sesuaikan user database Khanza
-  gZConnectiondb.Password := '5tronG!-V3rY-P4ssW0rd@1113!';  // Sesuaikan password database Khanza
-  gZConnectiondb.Database := 'sik';      // Nama database default SIMRS Khanza (sik)
+  // Instansiasi objek bridge penanganan event
+  gZeosBridge := TZeosKeepAliveBridge.Create;
 
-  // Tetap pertahankan connection pool agar performa REST API tinggi
-  gZConnectiondb.Properties.Values['controls'] := 'true';
-  gZConnectiondb.Properties.Values['pooled'] := 'true';
-  gZConnectiondb.Properties.Values['maxconnections'] := '100'; // Bisa dinaikkan ke 100 untuk Khanza
-  gZConnectiondb.Properties.Values['idle_timeout'] := '60';}
-
-  // membaca file dari config.ini
   vConfigFile := Concat(ExtractFilePath(ParamStr(0)), 'config.ini');
   if not FileExists(vConfigFile) then
   begin
+    LogWrite('-> [ERROR] File config.ini tidak ditemukan!');
     Writeln('-> [ERROR] File config.ini tidak ditemukan!');
+    gZeosBridge.Free;
+    gIPTracker.Free;
     Terminate;
     Exit;
   end;
@@ -129,10 +179,13 @@ begin
     gZConnectiondb.Properties.Values['pooled'] := 'true';
     gZConnectiondb.Properties.Values['maxconnections'] := vIni.ReadString('Database', 'MaxConnections', '50');
     gZConnectiondb.Properties.Values['idle_timeout'] := vIni.ReadString('Database', 'IdleTimeout', '60');
-    // Tambahkan 3 baris sakti ini untuk mendeteksi dan menyambung ulang otomatis:
-    gZConnectiondb.Properties.Values['reconnect'] := 'true';     // Aktifkan auto-reconnect bawaan driver
-    gZConnectiondb.Properties.Values['ping_timeout'] := '5';     // Deteksi ping putus dalam 5 detik
-    gZConnectiondb.Properties.Values['keepalive'] := '30';       // Kirim sinyal ping internal tiap 30 detik
+
+    // Konfigurasi internal driver Zeos
+    gZConnectiondb.Properties.Values['reconnect'] := 'true';
+    gZConnectiondb.Properties.Values['ping_timeout'] := '5';
+
+    // PASANG EVENT HANDLER: Antisipasi jika pool membuang koneksi secara mendadak
+    //gZConnectiondb.OnConnectionLost := gZeosBridge.HandleConnectionLost;
 
   finally
     vIni.Free;
@@ -140,18 +193,20 @@ begin
 
   try
     gZConnectiondb.Connect;
+    LogWrite('-> [SUKSES] Zeos Database Connection Pool Aktif.');
     Writeln('-> [SUKSES] Zeos Database Connection Pool Aktif.');
   except
     on E: Exception do
     begin
+      LogWrite('-> [ERROR] Gagal inisialisasi Database Pool: ' + E.Message);
       Writeln('-> [ERROR] Gagal inisialisasi Database Pool: ' + E.Message);
+      gZeosBridge.Free;
       gIPTracker.Free;
       Terminate;
       Exit;
     end;
   end;
 
-  // Instansiasi Server berbasis Class-Wrapper yang baru
   vServer := TConsoleServer.Create(nil);
   vServer.Port := vPort;
 
@@ -161,18 +216,46 @@ begin
     Writeln('Tekan [CTRL + C] di terminal untuk menghentikan server.');
     Writeln('-----------------------------------------------------');
 
+    // Inisialisasi waktu awal untuk siklus Ping aktif
+    vLastPingTick := GetTickCount64;
+
     while not Terminated do
     begin
       CheckSynchronize(100);
+
+      // --- MEKANISME AKTIF KEEP-ALIVE PING (Tiap 1 Menit / 60000 ms) ---
+      // Karena ini aplikasi konsol, kita gunakan GetTickCount64 (non-blocking) sebagai pengganti TTimer
+      if (GetTickCount64 - vLastPingTick) >= 60000 then
+      begin
+        vLastPingTick := GetTickCount64; // Reset timer tick
+
+        if gZConnectiondb.Connected then
+        begin
+          try
+            // Kirim ping ke server MariaDB. Jika server drop, fungsi ini otomatis memicu OnConnectionLost
+            if not gZConnectiondb.Ping then
+            begin
+              LogWrite('-> [PING] Server tidak merespons, mencoba melakukan reconnect otomatis...');
+              gZConnectiondb.Reconnect;
+            end;
+          except
+            on E: Exception do
+              LogWrite('-> [PING ERROR] Deteksi gangguan database: ' + E.Message);
+          end;
+        end;
+      end;
     end;
 
   finally
+    LogWrite('Membersihkan alokasi memori sistem...');
     Writeln('Membersihkan alokasi memori sistem...');
     vServer.Close;
     vServer.Free;
     gZConnectiondb.Disconnect;
     gZConnectiondb.Free;
+    gZeosBridge.Free; // Bersihkan kelas bridge
     gIPTracker.Free;
+    LogWrite('-> [OFFLINE] Server dihentikan dengan aman.');
   end;
 
   Terminate;
