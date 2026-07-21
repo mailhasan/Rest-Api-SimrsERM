@@ -8,16 +8,16 @@
       <Unit>
         <Filename Value="RestApiSimrsERM.lpr"/>
         <IsPartOfProject Value="True"/>
-        <CursorPos X="23" Y="14"/>
+        <CursorPos X="43" Y="14"/>
         <UsageCount Value="298"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="uhandlerapi.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="71"/>
-        <CursorPos X="60" Y="92"/>
+        <CursorPos X="50" Y="25"/>
         <UsageCount Value="298"/>
         <Loaded Value="True"/>
       </Unit>
@@ -43,7 +43,7 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="8"/>
         <TopLine Value="369"/>
-        <CursorPos X="58" Y="389"/>
+        <CursorPos X="87" Y="397"/>
         <UsageCount Value="298"/>
         <Loaded Value="True"/>
       </Unit>
@@ -61,7 +61,7 @@
         <EditorIndex Value="3"/>
         <TopLine Value="227"/>
         <CursorPos X="69" Y="67"/>
-        <UsageCount Value="148"/>
+        <UsageCount Value="150"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -70,7 +70,7 @@
         <EditorIndex Value="4"/>
         <TopLine Value="215"/>
         <CursorPos X="64" Y="246"/>
-        <UsageCount Value="145"/>
+        <UsageCount Value="147"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -79,16 +79,74 @@
         <EditorIndex Value="9"/>
         <TopLine Value="146"/>
         <CursorPos X="53" Y="164"/>
-        <UsageCount Value="78"/>
+        <UsageCount Value="80"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="umod_ranap_soape.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="11"/>
+        <EditorIndex Value="10"/>
         <TopLine Value="297"/>
-        <CursorPos X="64" Y="321"/>
-        <UsageCount Value="77"/>
+        <CursorPos X="96" Y="325"/>
+        <UsageCount Value="79"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_ranap_penilaian_medis.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="12"/>
+        <TopLine Value="171"/>
+        <CursorPos X="79" Y="202"/>
+        <UsageCount Value="75"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uhelper.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="16"/>
+        <CursorPos X="13"/>
+        <UsageCount Value="72"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_ranap_copyresep.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="13"/>
+        <CursorPos X="72" Y="21"/>
+        <UsageCount Value="71"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_ranap_peresepan_dokter.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="14"/>
+        <TopLine Value="198"/>
+        <CursorPos X="56" Y="216"/>
+        <UsageCount Value="31"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_ranap_resep_counter.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="15"/>
+        <TopLine Value="56"/>
+        <CursorPos X="74" Y="92"/>
+        <UsageCount Value="23"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_ranap_cari_obat.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="104" Y="15"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="umod_ranap_bangsal.pas"/>
+        <IsPartOfProject Value="True"/>
+        <EditorIndex Value="11"/>
+        <CursorPos X="24"/>
+        <UsageCount Value="20"/>
         <Loaded Value="True"/>
       </Unit>
       <Unit>
@@ -133,60 +191,8 @@
         <Loaded Value="True"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
-      <Unit>
-        <Filename Value="umod_ranap_penilaian_medis.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="12"/>
-        <TopLine Value="171"/>
-        <CursorPos X="79" Y="202"/>
-        <UsageCount Value="74"/>
-        <Loaded Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="uhelper.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="16"/>
-        <CursorPos X="13"/>
-        <UsageCount Value="71"/>
-        <Loaded Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="umod_ranap_copyresep.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="13"/>
-        <CursorPos X="72" Y="21"/>
-        <UsageCount Value="70"/>
-        <Loaded Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="umod_ranap_peresepan_dokter.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="14"/>
-        <TopLine Value="198"/>
-        <CursorPos X="56" Y="216"/>
-        <UsageCount Value="30"/>
-        <Loaded Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="umod_ranap_resep_counter.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="15"/>
-        <TopLine Value="56"/>
-        <CursorPos X="74" Y="92"/>
-        <UsageCount Value="22"/>
-        <Loaded Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="umod_ranap_cari_obat.pas"/>
-        <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="10"/>
-        <CursorPos X="60" Y="25"/>
-        <UsageCount Value="21"/>
-        <Loaded Value="True"/>
-      </Unit>
     </Units>
-    <JumpHistory HistoryIndex="28">
+    <JumpHistory HistoryIndex="29">
       <Position>
         <Filename Value="umod_ranap_soape.pas"/>
         <Caret Line="62" Column="28" TopLine="45"/>
@@ -302,6 +308,10 @@
       <Position>
         <Filename Value="uhandlerapi.pas"/>
         <Caret Line="26" Column="27" TopLine="10"/>
+      </Position>
+      <Position>
+        <Filename Value="umod_inacbg.pas"/>
+        <Caret Line="397" Column="87" TopLine="369"/>
       </Position>
     </JumpHistory>
     <RunParams>

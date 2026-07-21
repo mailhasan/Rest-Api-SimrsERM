@@ -11,7 +11,7 @@ uses
   umod_getObatTanpaAuth, umod_auth, umod_riwayat, umod_master_penyakit,
   umod_ranap_pasien, umod_ranap_soape, umod_ranap_penilaian_medis, uhelper,
   umod_ranap_copyresep, umod_ranap_peresepan_dokter, umod_ranap_resep_counter,
-  umod_ranap_cari_obat;
+  umod_ranap_cari_obat, umod_ranap_bangsal;
 
 type
   { TConsoleRouter }

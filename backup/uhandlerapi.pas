@@ -23,8 +23,8 @@ uses
   umod_ranap_penilaian_medis,
   umod_ranap_copyresep,
   umod_ranap_peresepan_dokter,
-  umod_ranap_resep_counter
-
+  umod_ranap_resep_counter,
+  umod_ranap_cari_obat
   ;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
@@ -87,6 +87,10 @@ begin
   // REGISTER INSTANCE BARU: FORM UTAMA PERESEPAN DOKTER
   TRouteRanapPeresepanDokterCRUD.Create(ARoutesCollection);
   TRouteRanapResepCounter.Create(ARoutesCollection);
+  // REGISTER INSTANCE BARU: SEARCH / BUILD CACHE DATA OBAT
+  TRouteRanapCariObat.Create(ARoutesCollection);
+  // REGISTER INSTANCE BARU: CRUD DATA BANGSAL / DEPO
+  TRouteRanapBangsalCRUD.Create(ARoutesCollection);
 end;
 
 // =================================================================
