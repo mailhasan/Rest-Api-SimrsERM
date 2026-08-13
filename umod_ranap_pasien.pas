@@ -12,7 +12,7 @@ type
   { TRouteRanapPasienSearch }
   TRouteRanapPasienSearch = class(TBrookURLRoute)
   protected
-    procedure DoRequest(ASender: TObject; ARoute: TBrookURLRoute; ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse) override;
+    procedure DoRequest(ASender: TObject; ARoute: TBrookURLRoute; ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse); override;
   public
     procedure AfterConstruction; override;
   end;
@@ -22,11 +22,19 @@ implementation
 { TRouteRanapPasienSearch }
 uses uhandlerapi;
 
+// Helper Function: Menangkap parameter baik dari Query String (URL) maupun Body Request (Form)
+function GetReqValue(ARequest: TBrookHTTPRequest; const AName: string): string;
+begin
+  Result := Trim(ARequest.Params.Values[AName]);
+  if Result = '' then
+    Result := Trim(ARequest.Fields.Values[AName]);
+end;
+
 procedure TRouteRanapPasienSearch.AfterConstruction;
 begin
   inherited AfterConstruction;
   Methods := [rmGET];
-  Pattern := 'api/v1/ranap/pasien'; // Endpoint URL: /api/ranap/pasien
+  Pattern := 'api/v1/ranap/pasien'; // Endpoint URL: /api/v1/ranap/pasien
 end;
 
 procedure TRouteRanapPasienSearch.DoRequest(ASender: TObject; ARoute: TBrookURLRoute; ARequest: TBrookHTTPRequest; AResponse: TBrookHTTPResponse);
@@ -41,18 +49,18 @@ begin
   // Validasi Token Keamanan via Satpam Global uhandlerapi
   if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
 
-  // FIX: Mengubah dari Params menjadi Fields untuk menangkap Query Parameter (?) di Postman
-  vNoRM          := Trim(ARequest.Fields.Values['norm']);
-  vNamaPasien    := Trim(ARequest.Fields.Values['nama_pasien']);
-  vNamaDokter    := Trim(ARequest.Fields.Values['nama_dokter']);
-  vKodeKamar     := Trim(ARequest.Fields.Values['kode_kamar']); 
-  vStatusPulang  := Trim(ARequest.Fields.Values['status_pulang']);
+  // FIX: Menggunakan GetReqValue agar bisa membaca Query Parameter (?) dan Body Form sekaligus
+  vNoRM          := GetReqValue(ARequest, 'norm');
+  vNamaPasien    := GetReqValue(ARequest, 'nama_pasien');
+  vNamaDokter    := GetReqValue(ARequest, 'nama_dokter');
+  vKodeKamar     := GetReqValue(ARequest, 'kode_kamar'); 
+  vStatusPulang  := GetReqValue(ARequest, 'status_pulang');
 
-  // Parameter Tanggal (Format ekspektasi dari frontend: YYYY-MM-DD)
-  vTglMasukAwal  := Trim(ARequest.Fields.Values['tgl_masuk_awal']);
-  vTglMasukAkhir := Trim(ARequest.Fields.Values['tgl_masuk_akhir']);
-  vTglKeluarAwal := Trim(ARequest.Fields.Values['tgl_keluar_awal']);
-  vTglKeluarAkhir:= Trim(ARequest.Fields.Values['tgl_keluar_akhir']);
+  // Parameter Tanggal (Format: YYYY-MM-DD)
+  vTglMasukAwal  := GetReqValue(ARequest, 'tgl_masuk_awal');
+  vTglMasukAkhir := GetReqValue(ARequest, 'tgl_masuk_akhir');
+  vTglKeluarAwal := GetReqValue(ARequest, 'tgl_keluar_awal');
+  vTglKeluarAkhir:= GetReqValue(ARequest, 'tgl_keluar_akhir');
 
   // Alokasi Objek Memori
   vQuery := TZQuery.Create(nil);
@@ -61,7 +69,7 @@ begin
 
   vQuery.Connection := uhandlerapi.gZConn;
 
-  try // Blok Pengaman Utama dari Crash dan Memory Leak
+  try
     try
       with vFilterSQL do
       begin
@@ -80,29 +88,31 @@ begin
         Add('JOIN dokter ON reg_periksa.kd_dokter = dokter.kd_dokter');
         Add('WHERE 1=1');
 
-        // 1. Filter Opsional Utama (Bisa Dikombinasikan Bersamaan)
+        // 1. Filter Opsional Utama
         if vNoRM <> '' then Add('AND pasien.no_rkm_medis LIKE :norm');
         if vNamaPasien <> '' then Add('AND pasien.nm_pasien LIKE :nmpasien');
         if vNamaDokter <> '' then Add('AND dokter.nm_dokter LIKE :nmdokter');
-        if vKodeKamar <> '' then Add('AND (kamar.kd_kamar LIKE :kdkamar OR bangsal.nm_bangsal LIKE :kdkamar)'); 
         
-        // 2. Filter Tanggal Masuk (Opsional)
+        // Filter Kode Kamar / Nama Bangsal (Menggunakan 2 parameter terpisah agar binding Zeos presisi)
+        if vKodeKamar <> '' then Add('AND (kamar.kd_kamar LIKE :kdkamar OR bangsal.nm_bangsal LIKE :nmbangsal)'); 
+        
+        // 2. Filter Tanggal Masuk
         if (vTglMasukAwal <> '') and (vTglMasukAkhir <> '') then
           Add('AND kamar_inap.tgl_masuk BETWEEN :tglmasuk1 AND :tglmasuk2');
 
-        // 3. Filter Tanggal Keluar (Opsional)
+        // 3. Filter Tanggal Keluar
         if (vTglKeluarAwal <> '') and (vTglKeluarAkhir <> '') then
           Add('AND kamar_inap.tgl_keluar BETWEEN :tglkeluar1 AND :tglkeluar2');
 
-        // 4. LOGIKA UTAMA: Otomatis kunci Ranap Aktif jika tidak memfilter status pulang secara spesifik
+        // 4. Logika Ranap Aktif / Status Pulang
         if vStatusPulang <> '' then
         begin
           Add('AND kamar_inap.stts_pulang LIKE :stts');
         end
         else if (vTglKeluarAwal = '') then 
         begin
-          // Jika user tidak mencari status pulang tertentu dan tidak mencari range keluar, tampilkan yang masih aktif dirawat
-          Add('AND (kamar_inap.stts_pulang = "" OR kamar_inap.stts_pulang IS NULL)');
+          // Dalam SIMRS Khanza, pasien aktif ditandai stts_pulang = '-' atau kosong/null
+          Add('AND (kamar_inap.stts_pulang = ''-'' OR kamar_inap.stts_pulang = '''' OR kamar_inap.stts_pulang IS NULL)');
         end;
 
         Add('ORDER BY dokter.nm_dokter, pasien.nm_pasien');
@@ -114,7 +124,13 @@ begin
       if vNoRM <> '' then vQuery.ParamByName('norm').AsString := '%' + vNoRM + '%';
       if vNamaPasien <> '' then vQuery.ParamByName('nmpasien').AsString := '%' + vNamaPasien + '%';
       if vNamaDokter <> '' then vQuery.ParamByName('nmdokter').AsString := '%' + vNamaDokter + '%';
-      if vKodeKamar <> '' then vQuery.ParamByName('kdkamar').AsString := '%' + vKodeKamar + '%';
+      
+      if vKodeKamar <> '' then 
+      begin
+        vQuery.ParamByName('kdkamar').AsString := '%' + vKodeKamar + '%';
+        vQuery.ParamByName('nmbangsal').AsString := '%' + vKodeKamar + '%';
+      end;
+
       if vStatusPulang <> '' then vQuery.ParamByName('stts').AsString := '%' + vStatusPulang + '%';
 
       if (vTglMasukAwal <> '') and (vTglMasukAkhir <> '') then
@@ -180,7 +196,6 @@ begin
       end;
     end;
   finally
-    // Penjamin Pelepasan Memori: Selalu Dieksekusi Baik Saat Normal Maupun Saat Terjadi Exception
     vJSONArray.Free;
     vFilterSQL.Free;
     vQuery.Free;

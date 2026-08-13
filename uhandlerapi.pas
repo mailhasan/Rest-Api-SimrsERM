@@ -25,7 +25,8 @@ uses
   umod_ranap_peresepan_dokter,
   umod_ranap_resep_counter,
   umod_ranap_cari_obat,
-  umod_ranap_bangsal
+  umod_ranap_bangsal,
+  umod_ralan_pasien
   ;
 
 procedure RegistrasiSemuaRute(ARoutesCollection: TCollection; AZConn: TZConnection; AIPTracker: TStringList);
@@ -92,6 +93,9 @@ begin
   TRouteRanapCariObat.Create(ARoutesCollection);
   // REGISTER INSTANCE BARU: CRUD DATA BANGSAL / DEPO
   TRouteRanapBangsalCRUD.Create(ARoutesCollection);
+
+  // REGISTER INSTANCE BARU: DAFTAR PASIEN RAWAT JALAN
+  TRouteRalanPasienCRUD.Create(ARoutesCollection);
 end;
 
 // =================================================================

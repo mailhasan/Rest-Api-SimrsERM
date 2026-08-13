@@ -1764,7 +1764,7 @@ var
   JSONArrayKunjungan: TJSONArray;
   vCurrentNoRawat: string;
 begin
-  if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
+  //if not IsAuthenticatedtoken(ARequest, AResponse) then Exit;
 
   // Tangkap parameter filter dari query string URL
   vNoRM     := Trim(ARequest.Params.Values['norm']);
@@ -1880,7 +1880,7 @@ begin
 
     // SUNTIK DATA TRIASE IGD DI SINI
     JSONKunjungan.Add('triase_igd', AmbilDataTriaseIGD(uhandlerapi.gZConn, vCurrentNoRawat));
-	
+
     // SUNTIK DATA ASESMEN KEPERAWATAN IGD DI SINI
     JSONKunjungan.Add('asesmen_keperawatan_igd', AmbilAsesmenKeperawatanIGD(uhandlerapi.gZConn, vCurrentNoRawat));
 
@@ -1889,13 +1889,13 @@ begin
 
     // SUNTIK DATA ASESMEN KEPERAWATAN RANAP DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('asesmen_keperawatan_ranap', AmbilAsesmenKeperawatanRanap(uhandlerapi.gZConn, vCurrentNoRawat));
-	
+
 	// SUNTIK DATA DIAGNOSA / ICD-10 DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('diagnosa_icd10', AmbilRiwayatDiagnosa(uhandlerapi.gZConn, vCurrentNoRawat));
 	  
 	// SUNTIK DATA PROSEDUR / ICD-9 CM DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('prosedur_icd9', AmbilRiwayatProsedur(uhandlerapi.gZConn, vCurrentNoRawat));
-	
+
 	 // SUNTIK DATA SOAP RAWAT JALAN & rawat inap DI SINI
     JSONKunjungan.Add('soap_rajal', AmbilSOAPRawatJalan(uhandlerapi.gZConn, vCurrentNoRawat));
     JSONKunjungan.Add('soap_ranap', AmbilSOAPRawatInap(uhandlerapi.gZConn, vCurrentNoRawat));
@@ -1910,20 +1910,20 @@ begin
 
     // SUNTIK DATA RIWAYAT MUTASI KAMAR INAP DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('riwayat_kamar_inap', AmbilRiwayatKamarInap(uhandlerapi.gZConn, vCurrentNoRawat));
-	
+
     // SUNTIK DATA PEMERIKSAAN LABORATORIUM DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('laboratorium', AmbilRiwayatLaboratorium(gZConn, vCurrentNoRawat));
-	
+
     // SUNTIK DATA PEMERIKSAAN RADIOLOGI DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('radiologi', AmbilRiwayatRadiologi(uhandlerapi.gZConn, vCurrentNoRawat));
-	
+
     // SUNTIK DATA PEMBERIAN OBAT DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('pemberian_obat', AmbilRiwayatObat(uhandlerapi.gZConn, vCurrentNoRawat));
-	// SUNTIK DATA RESEP PULANG DI SINI (TAMBAHKAN BARIS INI)
+    	// SUNTIK DATA RESEP PULANG DI SINI (TAMBAHKAN BARIS INI)
     JSONKunjungan.Add('resep_pulang', AmbilResepPulang(uhandlerapi.gZConn, vCurrentNoRawat));
-
+    {
     // SUNTIK DATA RESUME MEDIS (RALAN & RANAP) DI SINI (TAMBAHKAN BARIS INI)
-      JSONKunjungan.Add('resume_medis', AmbilResumeMedis(uhandlerapi.gZConn, vCurrentNoRawat));
+      JSONKunjungan.Add('resume_medis', AmbilResumeMedis(uhandlerapi.gZConn, vCurrentNoRawat)); }
    
 
     JSONRes.Add('kunjungan', JSONArrayKunjungan);
