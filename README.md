@@ -60,5 +60,5 @@ Proyek ini diinisiasi dan dikembangkan secara aktif oleh:
 * **Email:** [mail.hasan06@gmail.com](mailto:mail.hasan06@gmail.com)
 * **Telegram:** [@Mailhasan1](https://t.me/Mailhasan1)
 
-Jika Anda memiliki pertanyaan seputar integrasi, kebutuhan bridging kustom untuk SIMRS Khanza, atau ingin berdiskusi mengenai arsitektur sistem ini, silakan hubungi melalui jalur komunikasi di atas.
+Jika Anda memiliki pertanyaan seputar integrasi, kebutuhan bridging kustom rest api untuk SIMRS Khanza, atau ingin berdiskusi mengenai arsitektur sistem ini, silakan hubungi melalui jalur komunikasi di atas.
 
